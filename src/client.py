@@ -3,7 +3,7 @@ import socket
 from util import *
 
 # client class
-class Client():
+class Client:
 	def __init__(self, server_host, server_port):
 		# core variables
 		self.pri_key = randkey()

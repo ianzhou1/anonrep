@@ -3,7 +3,7 @@ import socket
 from util import *
 
 # server class
-class Server():
+class Server:
 	def __init__(self, host, port, server_id):
 		# identification
 		self.server_id = server_id

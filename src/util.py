@@ -2,7 +2,7 @@ import socket
 from random import randint
 
 # constants class
-class Constants(object):
+class Constants:
 	MOD = 65537 # prime modulo
 	G = 1848 # primitive root of MOD
 	BUFFER_SIZE = 4096 # socket buffer receive buffer size
