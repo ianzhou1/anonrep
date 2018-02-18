@@ -11,15 +11,13 @@ class Client:
 
 		# socket variables
 		self.server_addr = (server_host, server_port)
-		self.cs = socket.socket()
-		self.cs.connect(self.server_addr)
 
 		# new client
 		msg = '{} {}'.format(
 				Constants.NEW_CLIENT,
 				self.pub_key
 		)
-		send(cs, msg)
+		send(self.server_addr, msg)
 
 	def run():
 		pass
