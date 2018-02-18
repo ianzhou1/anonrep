@@ -27,7 +27,8 @@ class Server:
 				Constants.ADD_REPUTATION: self.add_reputation,
 				Constants.NEW_ANNOUNCEMENT: self.new_announcement,
 				Constants.ADD_ANNOUNCEMENT: self.add_announcement,
-				Constants.NEW_MESSAGE: self.new_message
+				Constants.NEW_MESSAGE: self.new_message,
+				Constants.NEW_FEEDBACK: self.new_feedback
 		}
 
 		# message length dict for received messages
@@ -37,7 +38,8 @@ class Server:
 				Constants.ADD_REPUTATION: 2,
 				Constants.NEW_ANNOUNCEMENT: 2,
 				Constants.ADD_ANNOUNCEMENT: 2,
-				Constants.NEW_MESSAGE: 3
+				Constants.NEW_MESSAGE: 3,
+				Constants.NEW_FEEDBACK: 3
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_lens.keys())
@@ -180,12 +182,19 @@ class Server:
 				client_msg, client_stp, client_rep)
 		send(self.board_addr, msg)
 
+	def new_feedback(self, msg_head, msg_args):
+		client_msg_id, client_vote, client_sig = [int(_) for _ in msg_args]
+
+		# [TODO] verify vote and linkable ring signature
+		msg = '{} {} {}'.format(Constants.POST_FEEDBACK, client_msg_id, client_vote)
+		send(self.board_addr, msg)
+
 	def run(self):
 		while True:
 			# accept and receive socket message
 			s, addr = self.ss.accept()
 			msg = recv(s)
-			close(s)
+			s.close()
 
 			msg_info = msg.split(maxsplit=1)
 

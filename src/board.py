@@ -17,12 +17,14 @@ class MessageBoard:
 		# respond dict for received messages
 		self.respond = {
 				Constants.POST_MESSAGE:	self.post_message,
+				Constants.POST_FEEDBACK: self.post_feedback,
 				Constants.DISP_BOARD:	self.disp_board
 		}
 
 		# message length dict for received messages
 		self.msg_lens = {
 				Constants.POST_MESSAGE: 3,
+				Constants.POST_FEEDBACK: 2,
 				Constants.DISP_BOARD:	1
 		}
 
@@ -56,8 +58,25 @@ class MessageBoard:
 		client_rep = int(client_rep)
 
 		# post message to board and increment message id
-		self.board[self.msg_id] = (client_msg, client_stp, client_rep)
+		self.board[self.msg_id] = {
+				Constants.MSG : client_msg,
+				Constants.NYM : client_stp,
+				Constants.REP : client_rep,
+				Constants.FB : Constants.INIT_FEEDBACK
+		}
 		self.msg_id += 1
+
+	def post_feedback(self, msg_head, msg_args):
+		client_msg_id, client_vote = [int(_) for _ in msg_args]
+
+		# [TODO] verify client message id
+		# post feedback to board
+		client_fb = self.board[client_msg_id][Constants.FB]
+		if client_vote >= 0:
+			client_fb = (client_fb[0] + client_vote, client_fb[1])
+		else:
+			client_fb = (client_fb[0], client_fb[1] + client_vote)
+		self.board[self.msg_id][Constants.FB] = client_fb
 
 	def disp_board(self, s, msg_head, msg_args):
 		client_ltp = int(msg_args[0])
@@ -77,7 +96,7 @@ class MessageBoard:
 			# verify message information
 			if not self.verify_message(msg_info):
 				self.eprint('Error processing message.')
-				close(s)
+				s.close()
 				continue
 
 			msg_head = msg_info[0]
@@ -86,9 +105,9 @@ class MessageBoard:
 			# respond to received message
 			if msg_head in Constants.OPEN_SOCKET:
 				self.respond[msg_head](s, msg_head, msg_args)
-				# close(s, socket.SHUT_WR)
+				# [TODO] close socket?!?
 			else:
-				close(s)
+				s.close()
 				self.respond[msg_head](msg_head, msg_args)
 
 	def eprint(self, err):

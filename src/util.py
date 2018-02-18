@@ -10,6 +10,7 @@ class Constants:
 	BUFFER_SIZE = 4096 # socket buffer receive buffer size
 	ENCODING = 'UTF-8' # socket encoding
 	INIT_REPUTATION = 0 # initial reputation
+	INIT_FEEDBACK = (0, 0) # initial feedback
 	INIT_ID = -1 # id indicating initial phase
 
 	# server message headers
@@ -19,14 +20,21 @@ class Constants:
 	NEW_ANNOUNCEMENT = 'NEW_ANNOUNCEMENT'
 	ADD_ANNOUNCEMENT = 'ADD_ANNOUNCEMENT'
 	NEW_MESSAGE = 'NEW_MESSAGE'
+	NEW_FEEDBACK = 'NEW_FEEDBACK'
 
 	# message board headers
 	POST_MESSAGE = 'POST_MESSAGE'
+	POST_FEEDBACK = 'POST_FEEDBACK'
 	DISP_BOARD = 'DISP_BOARD'
 
 	# headers requiring open socket
 	OPEN_SOCKET = set(DISP_BOARD)
 
+	# message board keys
+	MSG = 'msg' # message
+	NYM = 'nym' # short-term pseudonym
+	REP = 'rep' # reputation score
+	FB = 'fb' # feedback
 
 # send string through socket
 @singledispatch
@@ -42,11 +50,6 @@ def _(addr, msg):
 # recv string through socket
 def recv(s):
 	return s.recv(Constants.BUFFER_SIZE).decode(Constants.ENCODING)
-
-# close socket
-def close(s, how=socket.SHUT_RDWR):
-	s.shutdown(how)
-	s.close()
 
 # modular exponentiation
 def powm(base, exp, mod=Constants.MOD):
