@@ -25,7 +25,8 @@ class Server:
 				Constants.NEW_CLIENT:	self.new_client,
 				Constants.NEW_REPUTATION: self.new_reputation,
 				Constants.ADD_REPUTATION: self.add_reputation,
-				Constants.NEW_ANNOUNCEMENT: self.new_announcement
+				Constants.NEW_ANNOUNCEMENT: self.new_announcement,
+				Constants.ADD_ANNOUNCEMENT: self.add_announcement
 		}
 
 		# message length dict for received messages
@@ -33,7 +34,8 @@ class Server:
 				Constants.NEW_CLIENT: 1,
 				Constants.NEW_REPUTATION: 3,
 				Constants.ADD_REPUTATION: 2,
-				Constants.NEW_ANNOUNCEMENT: 2
+				Constants.NEW_ANNOUNCEMENT: 2,
+				Constants.ADD_ANNOUNCEMENT: 2
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_lens.keys())
@@ -75,7 +77,7 @@ class Server:
 
 		# verify that all arguments are of the appropriate type
 		try:
-			if msg_head == Constants.NEW_ANNOUNCEMENT:
+			if msg_head in [Constants.NEW_ANNOUNCEMENT, Constants.ADD_ANNOUNCEMENT]:
 				ann_list = deserialize(msg_args[0])
 				init_id = int(msg_args[1])
 			else:
