@@ -13,11 +13,10 @@ class Client:
 		self.server_addr = (server_host, server_port)
 
 		# new client
-		msg = '{} {}'.format(
-				Constants.NEW_CLIENT,
-				self.pub_key
-		)
+		msg = '{} {}'.format(Constants.NEW_CLIENT, self.pub_key)
 		send(self.server_addr, msg)
 
-	def run():
-		pass
+	def post(self, msg, nym, sig):
+		# new message post
+		msg = '{} {} {} {}'.format(Constants.NEW_MESSAGE, msg, nym, sig)
+		send(self.server_addr, msg)

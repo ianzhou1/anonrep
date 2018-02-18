@@ -11,8 +11,8 @@ class Server:
 		# core variables
 		self.pri_key = randkey()
 		self.pub_key = powm(Constants.G, self.pri_key)
-		self.rep_list = {} # long-term pseudonyms and encrypted reputation scores
-		self.nym_list = {} # short-term pseudonyms and decrypted reputation scores
+		self.ltp_list = {} # long-term pseudonyms and encrypted reputation scores
+		self.stp_list = {} # short-term pseudonyms and decrypted reputation scores
 
 		# socket variables
 		self.addr = (host, port)
@@ -26,7 +26,8 @@ class Server:
 				Constants.NEW_REPUTATION: self.new_reputation,
 				Constants.ADD_REPUTATION: self.add_reputation,
 				Constants.NEW_ANNOUNCEMENT: self.new_announcement,
-				Constants.ADD_ANNOUNCEMENT: self.add_announcement
+				Constants.ADD_ANNOUNCEMENT: self.add_announcement,
+				Constants.NEW_MESSAGE: self.new_message
 		}
 
 		# message length dict for received messages
@@ -35,13 +36,17 @@ class Server:
 				Constants.NEW_REPUTATION: 3,
 				Constants.ADD_REPUTATION: 2,
 				Constants.NEW_ANNOUNCEMENT: 2,
-				Constants.ADD_ANNOUNCEMENT: 2
+				Constants.ADD_ANNOUNCEMENT: 2,
+				Constants.NEW_MESSAGE: 3
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_lens.keys())
 
 	def set_next_server(self, next_host, next_port):
 		self.next_addr = (next_host, next_port)
+
+	def set_board(self, board_host, board_port):
+		self.board_addr = (board_host, board_port)
 
 	def encrypt(self, text):
 		# [TODO] replace with ElGamal
@@ -88,7 +93,7 @@ class Server:
 		return ret
 
 	def new_client(self, msg_head, msg_args):
-		client_ltp = msg_args[0]
+		client_ltp = int(msg_args[0])
 		client_rep = Constants.INIT_REPUTATION
 
 		# initiate new reputation
@@ -96,7 +101,7 @@ class Server:
 		self.new_reputation(Constants.NEW_REPUTATION, rep_args)
 
 	def new_reputation(self, msg_head, msg_args):
-		client_ltp, client_rep, init_id = msg_args
+		client_ltp, client_rep, init_id = [int(_) for _ in msg_args]
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
@@ -115,23 +120,24 @@ class Server:
 			self.add_reputation(Constants.ADD_REPUTATION, rep_args)
 
 	def add_reputation(self, msg_head, msg_args):
-		client_ltp, client_rep = msg_args
-		if client_ltp in self.rep_list:
+		client_ltp, client_rep = [int(_) for _ in msg_args]
+		if client_ltp in self.ltp_list:
 			return
 
 		# add reputation to current server and update next server
-		self.rep_list[client_ltp] = client_rep
+		self.ltp_list[client_ltp] = client_rep
 		msg = '{} {} {}'.format(Constants.ADD_REPUTATION, client_ltp, client_rep)
 		send(self.next_addr, msg)
 
 	def new_announcement(self, msg_head, msg_args):
 		ann_list, init_id = msg_args
 		ann_list = deserialize(ann_list)
+		init_id = int(init_id)
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
-				ann_list = self.rep_list
+				ann_list = self.ltp_list
 
 			# update, shuffle, and serialize announcement list
 			ann_list = self.announcement_update(ann_list)
@@ -150,6 +156,7 @@ class Server:
 	def add_announcement(self, msg_head, msg_args):
 		ann_list, init_id = msg_args
 		ann_list = deserialize(ann_list)
+		init_id = int(init_id)
 		if init_id == self.server_id:
 			return
 
@@ -157,17 +164,28 @@ class Server:
 			init_id = self.server_id
 
 		# add announcement list to current server and update next server
-		self.nym_list = ann_list
+		self.stp_list = ann_list
 		ann_list = serialize(ann_list)
 		msg = '{} {} {}'.format(Constants.ADD_ANNOUNCEMENT, ann_list, init_id)
 		send(self.next_addr, msg)
+
+	def new_message(self, msg_head, msg_args):
+		client_msg, client_stp, client_sig = msg_args
+		client_stp = int(client_stp)
+		client_sig = int(client_sig)
+
+		# [TODO] verify message, short-term pseudonym, and signature
+		client_rep = self.stp_list[client_stp]
+		msg = '{} {} {} {}'.format(Constants.POST_MESSAGE,
+				client_msg, client_stp, client_rep)
+		send(self.board_addr, msg)
 
 	def run(self):
 		while True:
 			# accept and receive socket message
 			s, addr = self.ss.accept()
 			msg = recv(s)
-			s.close()
+			close(s)
 
 			msg_info = msg.split(maxsplit=1)
 
@@ -177,11 +195,10 @@ class Server:
 				continue
 
 			msg_head = msg_info[0]
-			msg_args = [int(_) for _ in msg_info[1].split()]
+			msg_args = msg_info[1].split()
 
 			# respond to received message
 			self.respond[msg_head](msg_head, msg_args)
-
 
 	def eprint(self, err):
 		print('[SERVER] ' + err, file=sys.stderr)

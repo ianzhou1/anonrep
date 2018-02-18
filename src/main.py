@@ -8,6 +8,7 @@ def main():
 	try:
 		s = Server('localhost', 1234, 1)
 		s.set_next_server('localhost', 1234)
+		s.set_board('localhost', 7777)
 		thread = Thread(target=s.run)
 		thread.start()
 
