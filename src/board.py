@@ -59,10 +59,10 @@ class MessageBoard:
 
 		# post message to board and increment message id
 		self.board[self.msg_id] = {
-				Constants.MSG : client_msg,
-				Constants.NYM : client_stp,
-				Constants.REP : client_rep,
-				Constants.FB : Constants.INIT_FEEDBACK
+				Constants.MSG: client_msg,
+				Constants.NYM: client_stp,
+				Constants.REP: client_rep,
+				Constants.FB: Constants.INIT_FEEDBACK
 		}
 		self.msg_id += 1
 
