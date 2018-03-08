@@ -1,3 +1,4 @@
+import sys
 from util import Constants, randkey, powm, send
 
 # client class
@@ -18,6 +19,9 @@ class Client:
 		msg = '{} {} {} {}'.format(Constants.NEW_MESSAGE, msg, nym, sig)
 		send(self.server_addr, msg)
 
-# Make this long-running
+# TODO Make this long-running
 if __name__ == '__main__':
-	c = Client('localhost', 4547)
+	if len(sys.argv) != 2:
+		print('USAGE: python client.py port')
+		sys.exit(1)
+	c = Client('localhost', int(sys.argv[1]))
