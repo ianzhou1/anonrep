@@ -39,6 +39,10 @@ class Coordinator:
 	def new_server(self, msg_head, msg_args):
 		# parse args
 		server_host, server_port, server_id = msg_args
+		if server_id in self.ids:
+			self.eprint('Could not add {}: Duplicate ID'.format(msg_args))
+		self.ids.add(server_id)
+
 		# add server to ring
 		server_addr = (server_host, server_port)
 
@@ -105,5 +109,8 @@ if __name__ == '__main__':
 	if len(sys.argv) != 1:
 		print('USAGE: python coordinator.py')
 		sys.exit(1)
-	c = Coordinator(config.COORDINATOR_SERVER, config.COORDINATOR_PORT)
-	c.run()
+	try:
+		c = Coordinator(config.COORDINATOR_SERVER, config.COORDINATOR_PORT)
+		c.run()
+	except:
+		c.ss.close()

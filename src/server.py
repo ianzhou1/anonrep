@@ -141,6 +141,8 @@ class Server:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
 
+			self.sprint('New server with long-term pseudonym: {}'.format(client_ltp))
+
 			# encrypt client reputation
 			client_rep = self.encrypt(client_rep)
 
@@ -269,24 +271,30 @@ class Server:
 
 	def run(self):
 		while True:
-			# accept and receive socket message
-			s, addr = self.ss.accept()
-			msg = recv(s)
-			s.close()
+			try:
+				# accept and receive socket message
+				s, addr = self.ss.accept()
+				msg = recv(s)
+				s.close()
 
-			# verify message information
-			if not self.verify_message(msg):
-				self.eprint('Error processing message.')
-				continue
+				# verify message information
+				if not self.verify_message(msg):
+					self.eprint('Error processing message.')
+					continue
 
-			msg_head, *msg_args = msg
+				msg_head, *msg_args = msg
 
-			# respond to received message
-			self.respond[msg_head](msg_head, msg_args)
+				# respond to received message
+				self.respond[msg_head](msg_head, msg_args)
+			except Exception:
+				traceback.print_exc()
 
 if __name__ == '__main__':
 	if len(sys.argv) != 4:
 		print('USAGE: python server.py host port server_id')
 		sys.exit(1)
-	c = Server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
-	c.run()
+	try:
+		s = Server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
+		s.run()
+	except:
+		s.ss.close()

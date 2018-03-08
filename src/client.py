@@ -11,10 +11,13 @@ class Client:
 		self.server_addr = (server_host, server_port)
 
 		# new client
-		msg = '{} {}'.format(Constants.NEW_CLIENT, self.pub_key)
-		send(self.server_addr, msg)
+		send(self.server_addr, [Constants.NEW_CLIENT, self.pub_key])
 
 	def post(self, msg, nym, sig):
 		# new message post
 		msg = '{} {} {} {}'.format(Constants.NEW_MESSAGE, msg, nym, sig)
 		send(self.server_addr, msg)
+
+# Make this long-running
+if __name__ == '__main__':
+	c = Client('localhost', 4547)
