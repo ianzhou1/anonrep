@@ -1,5 +1,6 @@
 import socket
 import sys
+from threading import Thread
 import traceback
 
 import config
@@ -17,6 +18,9 @@ class Coordinator:
 		self.servers = []
 		# set of server_id's
 		self.ids = set()
+
+		sys.stdout.write('\r# servers: 0 | []')
+		sys.stdout.flush()
 
 		# respond dict for received messages
 		self.respond = {
@@ -58,8 +62,8 @@ class Coordinator:
 			send(server_addr,
 				[Constants.UPDATE_NEIGHBORS, prev_serv[0], prev_serv[1], next_serv[0], next_serv[1]])
 		self.servers.append((server_host, server_port))
-		self.sprint('Added server to ring.')
-		self.sprint('Servers: {}'.format(self.servers))
+		sys.stdout.write('\r# servers: {} | {}'.format(len(self.servers), self.servers))
+		sys.stdout.flush()
 
 	def verify_message(self, msg):
 		if len(msg) != 4:
@@ -84,6 +88,10 @@ class Coordinator:
 			ret = False
 
 		return ret
+
+	def begin_announcement_phase(self):
+		self.sprint('Beginning announcement phase...')
+		# TODO: FINISH
 
 	def run(self):
 		while True:
@@ -110,7 +118,13 @@ if __name__ == '__main__':
 		print('USAGE: python coordinator.py')
 		sys.exit(1)
 	try:
+		print('*** Press [ENTER] once the first announcement phase is ready to begin. ***')
 		c = Coordinator(config.COORDINATOR_SERVER, config.COORDINATOR_PORT)
-		c.run()
+		thread = Thread(target=c.run)
+		thread.start()
+
+		# Don't begin announcement phase until user presses enter
+		input()
+		c.begin_announcement_phase()
 	except:
 		c.ss.close()
