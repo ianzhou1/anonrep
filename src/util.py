@@ -13,6 +13,9 @@ class Constants:
 	INIT_FEEDBACK = (0, 0) # initial feedback
 	INIT_ID = -1 # id indicating initial phase
 
+	# coordinator server headers
+	NEW_SERVER = 'NEW_SERVER'
+
 	# server message headers
 	NEW_CLIENT = 'NEW_CLIENT'
 	NEW_REPUTATION = 'NEW_REPUTATION'
@@ -23,6 +26,9 @@ class Constants:
 	NEW_FEEDBACK = 'NEW_FEEDBACK'
 	REV_ANNOUNCEMENT = 'REV_ANNOUNCEMENT'
 	REPLACE_LTP = 'REPLACE_LTP'
+	UPDATE_NEIGHBORS = 'UPDATE_NEIGHBORS'
+	UPDATE_NEXT_SERVER = 'NEW_NEXT_SERVER'
+	UPDATE_PREV_SERVER = 'NEW_PREV_SERVER'
 
 	# message board headers
 	POST_MESSAGE = 'POST_MESSAGE'
@@ -41,17 +47,17 @@ class Constants:
 # send string through socket
 @singledispatch
 def send(s, msg):
-	s.send(msg.encode(Constants.ENCODING))
+	s.send(json.dumps(msg).encode(Constants.ENCODING))
 
 @send.register(tuple)
 def _(addr, msg):
 	s = socket.socket()
 	s.connect(addr)
-	s.send(msg.encode(Constants.ENCODING))
+	s.send(json.dumps(msg).encode(Constants.ENCODING))
 
 # recv string through socket
 def recv(s):
-	return s.recv(Constants.BUFFER_SIZE).decode(Constants.ENCODING)
+	return json.loads(s.recv(Constants.BUFFER_SIZE).decode(Constants.ENCODING))
 
 # modular exponentiation
 def powm(base, exp, mod=Constants.MOD):

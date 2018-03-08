@@ -1,6 +1,4 @@
-import sys
-import socket
-from util import *
+from util import Constants, randkey, powm, send
 
 # client class
 class Client:

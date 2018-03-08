@@ -1,6 +1,9 @@
-import sys
 import socket
-from util import *
+import sys
+import traceback
+
+import config
+from util import Constants, randkey, powm, serialize, deserialize, send, recv
 
 # server class
 class Server:
@@ -20,9 +23,11 @@ class Server:
 		self.ss.bind(self.addr)
 		self.ss.listen(5)
 
+		send(config.COORDINATOR_ADDR, [Constants.NEW_SERVER, host, port, server_id])
+
 		# respond dict for received messages
 		self.respond = {
-				Constants.NEW_CLIENT:	self.new_client,
+				Constants.NEW_CLIENT: self.new_client,
 				Constants.NEW_REPUTATION: self.new_reputation,
 				Constants.ADD_REPUTATION: self.add_reputation,
 				Constants.NEW_ANNOUNCEMENT: self.new_announcement,
@@ -30,7 +35,10 @@ class Server:
 				Constants.NEW_MESSAGE: self.new_message,
 				Constants.NEW_FEEDBACK: self.new_feedback,
 				Constants.REV_ANNOUNCEMENT: self.rev_announcement,
-				Constants.REPLACE_LTP: self.replace_ltp
+				Constants.REPLACE_LTP: self.replace_ltp,
+				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
+				Constants.UPDATE_NEXT_SERVER: self.update_next_server,
+				Constants.UPDATE_PREV_SERVER: self.update_prev_server,
 		}
 
 		# message length dict for received messages
@@ -43,10 +51,19 @@ class Server:
 				Constants.NEW_MESSAGE: 3,
 				Constants.NEW_FEEDBACK: 3,
 				Constants.REV_ANNOUNCEMENT: 2,
-				Constants.REPLACE_LTP: 2
+				Constants.REPLACE_LTP: 2,
+				Constants.UPDATE_NEIGHBORS: 4,
+				Constants.UPDATE_NEXT_SERVER: 2,
+				Constants.UPDATE_PREV_SERVER: 2
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_lens.keys())
+
+	def sprint(self, s):
+		print('[SERVER] ' + s)
+
+	def eprint(self, err):
+		print('[SERVER] ' + err, file=sys.stderr)
 
 	def set_next_server(self, next_host, next_port):
 		self.next_addr = (next_host, next_port)
@@ -81,12 +98,11 @@ class Server:
 		# [TODO] replace with verifiable shuffle
 		return ann_list
 
-	def verify_message(self, msg_info):
-		if len(msg_info) != 2:
+	def verify_message(self, msg):
+		if len(msg) < 2:
 			return False
 
-		msg_head = msg_info[0]
-		msg_args = msg_info[1].split()
+		msg_head, *msg_args = msg
 
 		# verify that msg_head is in respond dict
 		ret = (msg_head in self.respond)
@@ -96,7 +112,11 @@ class Server:
 
 		# verify that all arguments are of the appropriate type
 		try:
-			if msg_head in [Constants.NEW_ANNOUNCEMENT, Constants.REPLACE_STP]:
+			if msg_head == Constants.UPDATE_NEIGHBORS:
+				ports = int(msg_args[1]), int(msg_args[3])
+			elif msg_head == Constants.UPDATE_NEXT_SERVER or msg_head == Constants.UPDATE_PREV_SERVER:
+				port = int(msg_args[1])
+			elif msg_head in [Constants.NEW_ANNOUNCEMENT, Constants.REPLACE_STP]:
 				ann_list = deserialize(msg_args[0])
 				init_id = int(msg_args[1])
 			else:
@@ -125,9 +145,7 @@ class Server:
 			client_rep = self.encrypt(client_rep)
 
 			# pass reputation to next server
-			msg = '{} {} {} {}'.format(Constants.NEW_REPUTATION,
-					client_ltp, client_rep, init_id)
-			send(self.next_addr, msg)
+			send(self.next_addr, [Constants.NEW_REPUTATION, client_ltp, client_rep, init_id])
 		else:
 			# initiate add reputation
 			rep_args = [client_ltp, client_rep]
@@ -140,8 +158,7 @@ class Server:
 
 		# add reputation to current server and update next server
 		self.ltp_list[client_ltp] = client_rep
-		msg = '{} {} {}'.format(Constants.ADD_REPUTATION, client_ltp, client_rep)
-		send(self.next_addr, msg)
+		send(self.next_addr, [Constants.ADD_REPUTATION, client_ltp, client_rep])
 
 	def new_announcement(self, msg_head, msg_args):
 		ann_list, init_id = msg_args
@@ -159,8 +176,7 @@ class Server:
 			ann_list = serialize(ann_list)
 
 			# pass announcement list to next server
-			msg = '{} {} {}'.format(Constants.NEW_ANNOUNCEMENT, ann_list, init_id)
-			send(self.next_addr, msg)
+			send(self.next_addr, [Constants.NEW_ANNOUNCEMENT, ann_list, init_id])
 		else:
 			# initialize add announcement
 			ann_list = serialize(ann_list)
@@ -180,8 +196,7 @@ class Server:
 		# add announcement list to current server and update next server
 		self.stp_list = ann_list
 		ann_list = serialize(ann_list)
-		msg = '{} {} {}'.format(Constants.REPLACE_STP, ann_list, init_id)
-		send(self.next_addr, msg)
+		send(self.next_addr, [Constants.REPLACE_STP, ann_list, init_id])
 
 	def new_message(self, msg_head, msg_args):
 		client_msg, client_stp, client_sig = msg_args
@@ -190,16 +205,13 @@ class Server:
 
 		# [TODO] verify message, short-term pseudonym, and signature
 		client_rep = self.stp_list[client_stp]
-		msg = '{} {} {} {}'.format(Constants.POST_MESSAGE,
-				client_msg, client_stp, client_rep)
-		send(self.board_addr, msg)
+		send(self.board_addr, [Constants.POST_MESSAGE, client_msg, client_stp, client_rep])
 
 	def new_feedback(self, msg_head, msg_args):
 		client_msg_id, client_vote, client_sig = [int(_) for _ in msg_args]
 
 		# [TODO] verify vote and linkable ring signature
-		msg = '{} {} {}'.format(Constants.POST_FEEDBACK, client_msg_id, client_vote)
-		send(self.board_addr, msg)
+		send(self.board_addr, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
 
 	# [NOTE] must initiate rev announcement on prev of leader
 	def rev_announcement(self, msg_head, msg_args):
@@ -218,8 +230,7 @@ class Server:
 			ann_list = serialize(ann_list)
 
 			# pass announcement list to next server
-			msg = '{} {} {}'.format(Constants.REV_ANNOUNCEMENT, ann_list, init_id)
-			send(self.prev_addr, msg)
+			send(self.prev_addr, [Constants.REV_ANNOUNCEMENT, ann_list, init_id])
 		else:
 			# initialize add announcement
 			ann_list = serialize(ann_list)
@@ -239,8 +250,22 @@ class Server:
 		# add announcement list to current server and update next server
 		self.ltp_list = ann_list
 		ann_list = serialize(ann_list)
-		msg = '{} {} {}'.format(Constants.REPLACE_LTP, ann_list, init_id)
-		send(self.next_addr, msg)
+		send(self.next_addr, [Constants.REPLACE_LTP, ann_list, init_id])
+
+	def update_neighbors(self, msg_head, msg_args):
+		self.sprint('New Neighbors:')
+		self.sprint('Prev: {}'.format((msg_args[0], msg_args[1])))
+		self.sprint('Next: {}'.format((msg_args[2], msg_args[3])))
+		self.set_prev_server(msg_args[0], int(msg_args[1]))
+		self.set_next_server(msg_args[2], int(msg_args[3]))
+
+	def update_next_server(self, msg_head, msg_args):
+		self.sprint('New next server: {}'.format((msg_args[0], msg_args[1])))
+		self.set_next_server(msg_args[0], int(msg_args[1]))
+
+	def update_prev_server(self, msg_head, msg_args):
+		self.sprint('New prev server: {}'.format((msg_args[0], msg_args[1])))
+		self.set_prev_server(msg_args[0], int(msg_args[1]))
 
 	def run(self):
 		while True:
@@ -249,18 +274,19 @@ class Server:
 			msg = recv(s)
 			s.close()
 
-			msg_info = msg.split(maxsplit=1)
-
 			# verify message information
-			if not self.verify_message(msg_info):
+			if not self.verify_message(msg):
 				self.eprint('Error processing message.')
 				continue
 
-			msg_head = msg_info[0]
-			msg_args = msg_info[1].split()
+			msg_head, *msg_args = msg
 
 			# respond to received message
 			self.respond[msg_head](msg_head, msg_args)
 
-	def eprint(self, err):
-		print('[SERVER] ' + err, file=sys.stderr)
+if __name__ == '__main__':
+	if len(sys.argv) != 4:
+		print('USAGE: python server.py host port server_id')
+		sys.exit(1)
+	c = Server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
+	c.run()

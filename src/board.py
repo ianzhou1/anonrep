@@ -1,7 +1,7 @@
 import socket
 from util import *
 
-# message baord class
+# message board class
 class MessageBoard:
 	def __init__(self, host, port):
 		# core variables
