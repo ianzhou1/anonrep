@@ -21,7 +21,7 @@ class Client:
 
 # TODO Make this long-running
 if __name__ == '__main__':
-	if len(sys.argv) != 2:
-		print('USAGE: python client.py port')
+	if len(sys.argv) != 3:
+		print('USAGE: python client.py server_host server_port')
 		sys.exit(1)
-	c = Client('localhost', int(sys.argv[1]))
+	c = Client(sys.arv[1], int(sys.argv[2]))

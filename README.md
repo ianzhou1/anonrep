@@ -8,11 +8,11 @@ python src/coordinator.py
 
 Then, start up the normal servers:
 ```
-python src/server.py localhost 4545 1
+python src/server.py [server_host] [server_port] [server_id]
 ```
 
 Then, start up clients:
 ```
-python src/client.py 5555
+python src/client.py [server_host] [server_port]
 ```
 
