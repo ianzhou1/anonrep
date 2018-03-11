@@ -4,7 +4,7 @@ from threading import Thread
 import traceback
 
 import config
-from util import Constants, send, recv
+from util import Constants, send, recv, serialize
 
 # coordinator server
 class Coordinator:
@@ -65,6 +65,12 @@ class Coordinator:
 		sys.stdout.write('\r# servers: {} | {}'.format(len(self.servers), self.servers))
 		sys.stdout.flush()
 
+	def begin_announcement_phase(self):
+		self.sprint('Beginning announcement phase...')
+		# TODO: Randomly pick the initial
+		server_addr = self.servers[0]
+		send(server_addr, [Constants.NEW_ANNOUNCEMENT, serialize({}), Constants.INIT_ID])
+
 	def verify_message(self, msg):
 		if len(msg) != 4:
 			return False
@@ -88,10 +94,6 @@ class Coordinator:
 			ret = False
 
 		return ret
-
-	def begin_announcement_phase(self):
-		self.sprint('Beginning announcement phase...')
-		# TODO: FINISH
 
 	def run(self):
 		while True:

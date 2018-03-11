@@ -24,4 +24,4 @@ if __name__ == '__main__':
 	if len(sys.argv) != 3:
 		print('USAGE: python client.py server_host server_port')
 		sys.exit(1)
-	c = Client(sys.arv[1], int(sys.argv[2]))
+	c = Client(sys.argv[1], int(sys.argv[2]))

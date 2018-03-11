@@ -170,7 +170,7 @@ class Server:
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
-				ann_list = self.ltp_list
+				ann_list = dict(self.ltp_list)
 
 			# update, shuffle, and serialize announcement list
 			ann_list = self.announcement_fwd(ann_list)
@@ -196,6 +196,7 @@ class Server:
 			init_id = self.server_id
 
 		# add announcement list to current server and update next server
+		self.sprint("Announcement phase finished. Updated short-term pseudonyms.")
 		self.stp_list = ann_list
 		ann_list = serialize(ann_list)
 		send(self.next_addr, [Constants.REPLACE_STP, ann_list, init_id])
