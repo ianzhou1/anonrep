@@ -1,39 +1,33 @@
-import socket
-from util import *
+import sys
+
+from util import Constants, recv, serialize, send
 
 # message board class
 class MessageBoard:
-	def __init__(self, host, port):
+	def __init__(self):
 		# core variables
 		self.board = {} # message id and (message, pseudonym, reputation score)
 		self.msg_id = 0
-
-		# socket variables
-		self.addr = (host, port)
-		self.bs = socket.socket()
-		self.bs.bind(self.addr)
-		self.bs.listen(5)
 
 		# respond dict for received messages
 		self.respond = {
 				Constants.POST_MESSAGE:	self.post_message,
 				Constants.POST_FEEDBACK: self.post_feedback,
-				Constants.DISP_BOARD:	self.disp_board
+				Constants.DISP_BOARD: self.disp_board
 		}
 
 		# message length dict for received messages
 		self.msg_lens = {
 				Constants.POST_MESSAGE: 3,
 				Constants.POST_FEEDBACK: 2,
-				Constants.DISP_BOARD:	1
+				Constants.DISP_BOARD: 1
 		}
 
-	def verify_message(self, msg_info):
-		if len(msg_info) != 2:
+	def verify_message(self, msg):
+		if len(msg) == 0:
 			return False
 
-		msg_head = msg_info[0]
-		msg_args = msg_info[1].split()
+		msg_head, *msg_args = msg
 
 		# verify that msg_head is in respond dict
 		ret = (msg_head in self.respond)
@@ -85,30 +79,22 @@ class MessageBoard:
 		msg = serialize(self.board)
 		send(s, msg)
 
-	def run(self):
-		while True:
-			# accept and receive socket message
-			s, addr = self.bs.accept()
-			msg = recv(s)
+	def process_message(self, s, msg):
+		# verify message information
+		if not self.verify_message(msg):
+			self.eprint('Error processing message.')
+			s.close()
+			return
 
-			msg_info = msg.split(maxsplit=1)
+		msg_head, *msg_args = msg
 
-			# verify message information
-			if not self.verify_message(msg_info):
-				self.eprint('Error processing message.')
-				s.close()
-				continue
-
-			msg_head = msg_info[0]
-			msg_args = msg_info[1].split()
-
-			# respond to received message
-			if msg_head in Constants.OPEN_SOCKET:
-				self.respond[msg_head](s, msg_head, msg_args)
-				# [TODO] close socket?!?
-			else:
-				s.close()
-				self.respond[msg_head](msg_head, msg_args)
+		# respond to received message
+		if msg_head in Constants.OPEN_SOCKET:
+			self.respond[msg_head](s, msg_head, msg_args)
+			# [TODO] close socket?!?
+		else:
+			self.respond[msg_head](msg_head, msg_args)
+		s.close()
 
 	def eprint(self, err):
 		print('[BOARD] ' + err, file=sys.stderr)

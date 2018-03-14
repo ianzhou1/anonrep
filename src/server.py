@@ -38,7 +38,7 @@ class Server:
 				Constants.REPLACE_LTP: self.replace_ltp,
 				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
 				Constants.UPDATE_NEXT_SERVER: self.update_next_server,
-				Constants.UPDATE_PREV_SERVER: self.update_prev_server,
+				Constants.UPDATE_PREV_SERVER: self.update_prev_server
 		}
 
 		# message length dict for received messages
@@ -141,7 +141,7 @@ class Server:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
 
-			self.sprint('New server with long-term pseudonym: {}'.format(client_ltp))
+			self.sprint('New client with long-term pseudonym: {}'.format(client_ltp))
 
 			# encrypt client reputation
 			client_rep = self.encrypt(client_rep)
@@ -189,7 +189,10 @@ class Server:
 		ann_list, init_id = msg_args
 		ann_list = deserialize(ann_list)
 		init_id = int(init_id)
+
+		# tell coordinator that announcement phase is finished
 		if init_id == self.server_id:
+			send(config.COORDINATOR_ADDR, [Constants.END_ANNOUNCEMENT_PHASE])
 			return
 
 		if init_id == Constants.INIT_ID:

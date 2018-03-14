@@ -15,6 +15,7 @@ class Constants:
 
 	# coordinator server headers
 	NEW_SERVER = 'NEW_SERVER'
+	END_ANNOUNCEMENT_PHASE = 'END_ANNOUNCEMENT_PHASE'
 
 	# server message headers
 	NEW_CLIENT = 'NEW_CLIENT'
