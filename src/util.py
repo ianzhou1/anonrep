@@ -13,6 +13,8 @@ class Constants:
 	INIT_FEEDBACK = (0, 0) # initial feedback
 	INIT_ID = -1 # id indicating initial phase
 
+	MESSAGE_PHASE_LENGTH_IN_SECS = 5
+
 	# coordinator server headers
 	NEW_SERVER = 'NEW_SERVER'
 	END_ANNOUNCEMENT_PHASE = 'END_ANNOUNCEMENT_PHASE'
@@ -35,6 +37,7 @@ class Constants:
 	POST_MESSAGE = 'POST_MESSAGE'
 	POST_FEEDBACK = 'POST_FEEDBACK'
 	DISP_BOARD = 'DISP_BOARD'
+	END_MESSAGE_PHASE = 'END_MESSAGE_PHASE'
 
 	# headers requiring open socket
 	OPEN_SOCKET = set(DISP_BOARD)

@@ -1,7 +1,8 @@
 import socket
 import sys
-from threading import Thread
+import time
 import traceback
+from threading import Thread
 
 import config
 from board import MessageBoard
@@ -16,7 +17,7 @@ class Coordinator:
 		self.ss.listen(5)
 
 		self.is_message_phase = False
-		self.board = MessageBoard()
+		self.board = MessageBoard(self)
 
 		# list of (server_host, server_port)
 		self.servers = []
@@ -29,13 +30,13 @@ class Coordinator:
 		# respond dict for received messages
 		self.respond = {
 				Constants.NEW_SERVER: self.new_server,
-				Constants.END_ANNOUNCEMENT_PHASE: self.end_announcement_phase
+				Constants.END_ANNOUNCEMENT_PHASE: self.end_announcement_phase,
 		}
 
 		# message length dict for received messages
 		self.msg_lens = {
 				Constants.NEW_SERVER: 3,
-				Constants.END_ANNOUNCEMENT_PHASE: 0
+				Constants.END_ANNOUNCEMENT_PHASE: 0,
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_lens.keys())
@@ -78,10 +79,13 @@ class Coordinator:
 
 	def begin_announcement_phase(self):
 		self.sprint('Beginning announcement phase...')
-		self.is_message_phase = False
 		# TODO: Randomly pick the initial
 		server_addr = self.servers[0]
 		send(server_addr, [Constants.NEW_ANNOUNCEMENT, serialize({}), Constants.INIT_ID])
+
+	def end_round(self):
+		# TODO: Don't hardcode the leader
+		send(self.servers[-1], [Constants.REV_ANNOUNCEMENT, serialize({}), Constants.INIT_ID])
 
 	def verify_message(self, msg):
 		if len(msg) == 0:
@@ -137,14 +141,22 @@ if __name__ == '__main__':
 	if len(sys.argv) != 1:
 		print('USAGE: python coordinator.py')
 		sys.exit(1)
+	print('*** Press [ENTER] once the first announcement phase is ready to begin. ***')
+	c = Coordinator(config.COORDINATOR_SERVER, config.COORDINATOR_PORT)
 	try:
-		print('*** Press [ENTER] once the first announcement phase is ready to begin. ***')
-		c = Coordinator(config.COORDINATOR_SERVER, config.COORDINATOR_PORT)
 		thread = Thread(target=c.run)
 		thread.start()
 
 		# Don't begin announcement phase until user presses enter
 		input()
-		c.begin_announcement_phase()
+		while True:
+			c.begin_announcement_phase()
+			while not c.is_message_phase:
+				time.sleep(0.1)
+			# message/feedback phase has begun
+			time.sleep(Constants.MESSAGE_PHASE_LENGTH_IN_SECS)
+			c.end_round()
+			while c.is_message_phase:
+				time.sleep(0.1)
 	except:
 		c.ss.close()

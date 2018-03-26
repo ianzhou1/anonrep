@@ -1,10 +1,12 @@
 import sys
 
-from util import Constants, recv, serialize, send
+from util import Constants, serialize, send
 
 # message board class
 class MessageBoard:
-	def __init__(self):
+	def __init__(self, coordinator):
+		self.coordinator = coordinator
+
 		# core variables
 		self.board = {} # message id and (message, pseudonym, reputation score)
 		self.msg_id = 0
@@ -13,14 +15,16 @@ class MessageBoard:
 		self.respond = {
 				Constants.POST_MESSAGE:	self.post_message,
 				Constants.POST_FEEDBACK: self.post_feedback,
-				Constants.DISP_BOARD: self.disp_board
+				Constants.DISP_BOARD: self.disp_board,
+				Constants.END_MESSAGE_PHASE: self.end_message_phase
 		}
 
 		# message length dict for received messages
 		self.msg_lens = {
 				Constants.POST_MESSAGE: 3,
 				Constants.POST_FEEDBACK: 2,
-				Constants.DISP_BOARD: 1
+				Constants.DISP_BOARD: 1,
+				Constants.END_MESSAGE_PHASE: 1
 		}
 
 	def verify_message(self, msg):
@@ -78,6 +82,10 @@ class MessageBoard:
 		# send message board
 		msg = serialize(self.board)
 		send(s, msg)
+
+	def end_message_phase(self, msg_head, msg_args):
+		self.eprint('Round has ended. Restarting...')
+		self.coordinator.is_message_phase = False
 
 	def process_message(self, s, msg):
 		# verify message information

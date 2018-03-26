@@ -116,7 +116,8 @@ class Server:
 				ports = int(msg_args[1]), int(msg_args[3])
 			elif msg_head == Constants.UPDATE_NEXT_SERVER or msg_head == Constants.UPDATE_PREV_SERVER:
 				port = int(msg_args[1])
-			elif msg_head in [Constants.NEW_ANNOUNCEMENT, Constants.REPLACE_STP]:
+			elif msg_head in [Constants.NEW_ANNOUNCEMENT, Constants.REV_ANNOUNCEMENT,
+					Constants.REPLACE_STP, Constants.REPLACE_LTP]:
 				ann_list = deserialize(msg_args[0])
 				init_id = int(msg_args[1])
 			else:
@@ -247,7 +248,10 @@ class Server:
 		ann_list, init_id = msg_args
 		ann_list = deserialize(ann_list)
 		init_id = int(init_id)
+
+		# tell coordinator that it's time to start a new round
 		if init_id == self.server_id:
+			send(config.COORDINATOR_ADDR, [Constants.END_MESSAGE_PHASE])
 			return
 
 		if init_id == Constants.INIT_ID:
@@ -283,6 +287,7 @@ class Server:
 
 				# verify message information
 				if not self.verify_message(msg):
+					print(msg[0])
 					self.eprint('Error processing message.')
 					continue
 
@@ -297,8 +302,8 @@ if __name__ == '__main__':
 	if len(sys.argv) != 4:
 		print('USAGE: python server.py host port server_id')
 		sys.exit(1)
+	s = Server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
 	try:
-		s = Server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
 		s.run()
 	except:
 		s.ss.close()
