@@ -8,6 +8,8 @@ import config
 from board import MessageBoard
 from util import Constants, send, recv, serialize
 
+
+
 # coordinator server
 class Coordinator:
 	def __init__(self, host, port):
@@ -16,7 +18,7 @@ class Coordinator:
 		self.ss.bind(self.addr)
 		self.ss.listen(5)
 
-		self.is_message_phase = False
+		self.phase = Constants.ANNOUNCEMENT_PHASE
 		self.board = MessageBoard(self)
 
 		# list of (server_host, server_port)
@@ -74,8 +76,8 @@ class Coordinator:
 		sys.stdout.flush()
 
 	def end_announcement_phase(self, msg_head, msg_args):
-		self.sprint('Announcement phase finished. Beginning message/feedback phase...')
-		self.is_message_phase = True
+		self.sprint('Beginning message phase...')
+		self.phase = Constants.MESSAGE_PHASE
 
 	def begin_announcement_phase(self):
 		self.sprint('Beginning announcement phase...')
@@ -117,8 +119,8 @@ class Coordinator:
 				msg = recv(s)
 				s.close()
 
-				if self.is_message_phase:
-					self.board.process_message(s, msg)
+				if self.phase != Constants.ANNOUNCEMENT_PHASE:
+					self.board.process_message(s, msg, self.phase)
 					continue
 
 				# verify message information
@@ -151,12 +153,15 @@ if __name__ == '__main__':
 		input()
 		while True:
 			c.begin_announcement_phase()
-			while not c.is_message_phase:
+			while c.phase != Constants.MESSAGE_PHASE:
 				time.sleep(0.1)
-			# message/feedback phase has begun
+			# message phase has begun
 			time.sleep(Constants.MESSAGE_PHASE_LENGTH_IN_SECS)
+			c.sprint('Beginning feedback phase...')
+			c.phase = Constants.FEEDBACK_PHASE
+			time.sleep(Constants.FEEDBACK_PHASE_LENGTH_IN_SECS)
 			c.end_round()
-			while c.is_message_phase:
+			while c.phase == Constants.FEEDBACK_PHASE:
 				time.sleep(0.1)
 	except:
 		c.ss.close()

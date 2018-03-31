@@ -13,7 +13,13 @@ class Constants:
 	INIT_FEEDBACK = (0, 0) # initial feedback
 	INIT_ID = -1 # id indicating initial phase
 
-	MESSAGE_PHASE_LENGTH_IN_SECS = 5
+	MESSAGE_PHASE_LENGTH_IN_SECS = 3
+	FEEDBACK_PHASE_LENGTH_IN_SECS = 3
+
+	# coordinator phases
+	ANNOUNCEMENT_PHASE = 'ANNOUNCEMENT_PHASE'
+	MESSAGE_PHASE = 'MESSAGE_PHASE'
+	FEEDBACK_PHASE = 'FEEDBACK_PHASE'
 
 	# coordinator server headers
 	NEW_SERVER = 'NEW_SERVER'

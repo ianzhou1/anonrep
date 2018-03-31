@@ -27,7 +27,7 @@ class MessageBoard:
 				Constants.END_MESSAGE_PHASE: 1
 		}
 
-	def verify_message(self, msg):
+	def verify_message(self, msg, phase):
 		if len(msg) == 0:
 			return False
 
@@ -35,6 +35,11 @@ class MessageBoard:
 
 		# verify that msg_head is in respond dict
 		ret = (msg_head in self.respond)
+
+		# verify that
+		if ((msg_head == Constants.POST_FEEDBACK and phase == Constants.MESSAGE_PHASE) or
+				(msg_head == Constants.POST_MESSAGE and phase == Constants.FEEDBACK_PHASE)):
+			return False
 
 		# verify that msg_args length matches expected
 		ret = ret or (len(msg_args) == self.msg_lens[msg_head])
@@ -85,11 +90,11 @@ class MessageBoard:
 
 	def end_message_phase(self, msg_head, msg_args):
 		self.eprint('Round has ended. Restarting...')
-		self.coordinator.is_message_phase = False
+		self.coordinator.phase = Constants.ANNOUNCEMENT_PHASE
 
-	def process_message(self, s, msg):
+	def process_message(self, s, msg, phase):
 		# verify message information
-		if not self.verify_message(msg):
+		if not self.verify_message(msg, phase):
 			self.eprint('Error processing message.')
 			s.close()
 			return
