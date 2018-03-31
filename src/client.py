@@ -1,3 +1,4 @@
+import re
 import sys
 from util import Constants, randkey, powm, send
 
@@ -19,16 +20,42 @@ class Client:
 		msg = '{} {} {} {}'.format(Constants.NEW_MESSAGE, msg, nym, sig)
 		send(self.server_addr, msg)
 
+def show_help():
+	print('Instructions:')
+	print('--------------------------------------------------------')
+	print('HELP           : Displays this help message')
+	print('SHOW           : Shows message')
+	print('WRITE          : Write a message')
+	print('VOTE UP [num]  : Votes up the message with ID [num]')
+	print('VOTE DOWN [num]: Votes down the message with ID [num]')
+	print('--------------------------------------------------------')
+
 if __name__ == '__main__':
 	if len(sys.argv) != 3:
 		print('USAGE: python client.py server_host server_port')
 		sys.exit(1)
 	c = Client(sys.argv[1], int(sys.argv[2]))
+	show_help()
 	while True:
 		try:
-			s = input('> ')
+			s = input('> ').upper()
 			# TODO Add actual commands. Possible commands are display messages, add message, vote up/down message
-			print(s)
+			if s == 'HELP':
+				show_help()
+			elif s == 'SHOW':
+				# TODO
+				pass
+			elif s == 'WRITE':
+				# TODO
+				pass
+			elif re.match("VOTE UP \d+", s) is not None:
+				# TODO
+				pass
+			elif re.match("VOTE DOWN \d+", s) is not None:
+				# TODO
+				pass
+			else:
+				print('Invalid command. Type in HELP for instructions.')
 		except KeyboardInterrupt:
 			print()
 			break
