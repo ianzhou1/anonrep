@@ -128,9 +128,6 @@ class Coordinator:
 
 				# verify message information
 				if not self.verify_message(msg):
-					print('------------')
-					print(msg)
-					print('------------')
 					self.eprint('Error processing message.')
 					continue
 
