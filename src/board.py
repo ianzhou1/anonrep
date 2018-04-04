@@ -23,7 +23,7 @@ class MessageBoard:
 		self.msg_lens = {
 				Constants.POST_MESSAGE: 3,
 				Constants.POST_FEEDBACK: 2,
-				Constants.DISP_BOARD: 1,
+				Constants.DISP_BOARD: 0,
 				Constants.END_MESSAGE_PHASE: 1
 		}
 
@@ -82,14 +82,12 @@ class MessageBoard:
 		self.board[self.msg_id][Constants.FB] = client_fb
 
 	def disp_board(self, s, msg_head, msg_args):
-		client_ltp = int(msg_args[0])
-
 		# send message board
 		msg = serialize(self.board)
 		send(s, msg)
 
 	def end_message_phase(self, msg_head, msg_args):
-		self.eprint('Round has ended. Restarting...')
+		self.eprint('Round has ended. Starting new round...')
 		self.coordinator.phase = Constants.ANNOUNCEMENT_PHASE
 
 	def process_message(self, s, msg, phase):
@@ -104,7 +102,6 @@ class MessageBoard:
 		# respond to received message
 		if msg_head in Constants.OPEN_SOCKET:
 			self.respond[msg_head](s, msg_head, msg_args)
-			# [TODO] close socket?!?
 		else:
 			self.respond[msg_head](msg_head, msg_args)
 		s.close()

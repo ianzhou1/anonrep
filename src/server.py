@@ -71,9 +71,6 @@ class Server:
 	def set_prev_server(self, prev_host, prev_port):
 		self.prev_addr = (prev_host, prev_port)
 
-	def set_board(self, board_host, board_port):
-		self.board_addr = (board_host, board_port)
-
 	def encrypt(self, text):
 		# [TODO] replace with ElGamal
 		return text
@@ -120,6 +117,8 @@ class Server:
 					Constants.REPLACE_STP, Constants.REPLACE_LTP]:
 				ann_list = deserialize(msg_args[0])
 				init_id = int(msg_args[1])
+			elif msg_head == Constants.NEW_MESSAGE:
+				msg_args = [int(_) for _ in msg_args[1:]]
 			else:
 				msg_args = [int(_) for _ in msg_args]
 		except ValueError:
@@ -207,18 +206,17 @@ class Server:
 
 	def new_message(self, msg_head, msg_args):
 		client_msg, client_stp, client_sig = msg_args
-		client_stp = int(client_stp)
-		client_sig = int(client_sig)
+		client_stp = str(client_stp)
 
 		# [TODO] verify message, short-term pseudonym, and signature
 		client_rep = self.stp_list[client_stp]
-		send(self.board_addr, [Constants.POST_MESSAGE, client_msg, client_stp, client_rep])
+		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, client_rep])
 
 	def new_feedback(self, msg_head, msg_args):
 		client_msg_id, client_vote, client_sig = [int(_) for _ in msg_args]
 
 		# [TODO] verify vote and linkable ring signature
-		send(self.board_addr, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
+		send(config.COORDINATOR_ADDR, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
 
 	# [NOTE] must initiate rev announcement on prev of leader
 	def rev_announcement(self, msg_head, msg_args):
@@ -287,7 +285,6 @@ class Server:
 
 				# verify message information
 				if not self.verify_message(msg):
-					print(msg[0])
 					self.eprint('Error processing message.')
 					continue
 
@@ -305,5 +302,5 @@ if __name__ == '__main__':
 	s = Server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
 	try:
 		s.run()
-	except:
+	finally:
 		s.ss.close()

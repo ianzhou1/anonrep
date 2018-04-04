@@ -1,6 +1,9 @@
+import pprint
 import re
 import sys
-from util import Constants, randkey, powm, send
+
+import config
+from util import Constants, deserialize, powm, randkey, send, sendrecv
 
 # client class
 class Client:
@@ -15,10 +18,17 @@ class Client:
 		# new client
 		send(self.server_addr, [Constants.NEW_CLIENT, self.pub_key])
 
+	def encrypt(self, msg):
+		# TODO: encrypt msg with private key and return encrypted msg
+		return msg
+
+	def get_nym(self):
+		# TODO: get nym and return it
+		return self.pub_key
+
 	def post(self, msg, nym, sig):
 		# new message post
-		msg = '{} {} {} {}'.format(Constants.NEW_MESSAGE, msg, nym, sig)
-		send(self.server_addr, msg)
+		send(self.server_addr, [Constants.NEW_MESSAGE, msg, nym, sig])
 
 def show_help():
 	print('Instructions:')
@@ -39,20 +49,24 @@ if __name__ == '__main__':
 	while True:
 		try:
 			s = input('> ').upper()
-			# TODO Add actual commands. Possible commands are display messages, add message, vote up/down message
 			if s == 'HELP':
 				show_help()
 			elif s == 'SHOW':
-				# TODO
-				pass
+				messages = deserialize(sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD]))
+				pprint.PrettyPrinter(indent=4).pprint(messages)
 			elif s == 'WRITE':
-				# TODO
+				msg = input('Write message here: ')
+				# TODO: Compute nym
+				# TODO: encrypt msg with private key
+				c.post(c.encrypt(msg), c.get_nym(), c.pub_key)
 				pass
 			elif re.match("VOTE UP \d+", s) is not None:
 				# TODO
+				print('vote up...')
 				pass
 			elif re.match("VOTE DOWN \d+", s) is not None:
 				# TODO
+				print('vote down...')
 				pass
 			else:
 				print('Invalid command. Type in HELP for instructions.')

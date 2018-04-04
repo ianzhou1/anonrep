@@ -117,7 +117,10 @@ class Coordinator:
 				# accept and receive socket message
 				s, addr = self.ss.accept()
 				msg = recv(s)
-				s.close()
+				# displaying a board can be done at any time
+				if len(msg) > 0 and msg[0] == Constants.DISP_BOARD:
+					self.board.process_message(s, msg, self.phase)
+					continue
 
 				if self.phase != Constants.ANNOUNCEMENT_PHASE:
 					self.board.process_message(s, msg, self.phase)
@@ -125,6 +128,9 @@ class Coordinator:
 
 				# verify message information
 				if not self.verify_message(msg):
+					print('------------')
+					print(msg)
+					print('------------')
 					self.eprint('Error processing message.')
 					continue
 
@@ -132,12 +138,15 @@ class Coordinator:
 
 				# respond to received message
 				self.respond[msg_head](msg_head, msg_args)
+
+				s.close()
 			except ConnectionAbortedError:
 				print()
 				self.ss.close()
 				break
 			except Exception:
 				traceback.print_exc()
+		self.ss.close()
 
 if __name__ == '__main__':
 	if len(sys.argv) != 1:
@@ -163,5 +172,5 @@ if __name__ == '__main__':
 			c.end_round()
 			while c.phase == Constants.FEEDBACK_PHASE:
 				time.sleep(0.1)
-	except:
+	finally:
 		c.ss.close()
