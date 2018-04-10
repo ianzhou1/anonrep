@@ -1,5 +1,11 @@
 # anonrep
 
+## Setup (TODO organize this)
+- pip install the requirements.txt
+- brew tap ethereum/ethereum
+- brew install ethereum
+- brew install solidity
+
 ## Usage (not at all final, just for developers' reference)
 First, start up a coordinator:
 ```
