@@ -10,7 +10,7 @@ class Constants:
 	INTEGER_SIZE = 8 # number of bytes that will be used to denote the size of payload
 	BUFFER_SIZE = 4096 # socket buffer receive buffer size
 	ENCODING = 'UTF-8' # socket encoding
-	INIT_REPUTATION = 0 # initial reputation
+	INIT_REPUTATION = (1, 0) # initial reputation
 	INIT_FEEDBACK = (0, 0) # initial feedback
 	INIT_ID = -1 # id indicating initial phase
 
@@ -91,13 +91,13 @@ def powm(base, exp, mod=Constants.MOD):
 def randkey(start=0, end=Constants.MOD):
 	return randint(start, end)
 
-# serialize dictionary
-def serialize(d):
-	return json.dumps(d, separators=(',', ':'))
+# serialize container
+def serialize(c):
+	return json.dumps(c, separators=(',', ':'))
 
-# deserialize dictionary
+# deserialize container
 def deserialize(s):
-	d = json.loads(s)
-	if not isinstance(d, dict):
+	c = json.loads(s)
+	if not isinstance(c, dict) and not isinstance(c, list):
 		raise ValueError
-	return d
+	return c

@@ -3,7 +3,7 @@ import re
 import sys
 
 import config
-from util import Constants, deserialize, powm, randkey, send, sendrecv
+from util import Constants, powm, randkey, send, sendrecv
 
 # client class
 class Client:
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 			if s == 'HELP':
 				show_help()
 			elif s == 'SHOW':
-				messages = deserialize(sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD]))
+				messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
 				pprint.PrettyPrinter(indent=4).pprint(messages)
 			elif re.match("WRITE \d+", s) is not None:
 				msg = input('Write message here: ')

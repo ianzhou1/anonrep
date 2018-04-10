@@ -3,7 +3,8 @@ import sys
 import traceback
 
 import config
-from util import Constants, randkey, powm, serialize, deserialize, send, recv
+from util import Constants, randkey, powm, send, recv
+from Crypto.PublicKey import ElGamal
 
 # server class
 class Server:
@@ -38,26 +39,26 @@ class Server:
 				Constants.REPLACE_LTP: self.replace_ltp,
 				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
 				Constants.UPDATE_NEXT_SERVER: self.update_next_server,
-				Constants.UPDATE_PREV_SERVER: self.update_prev_server
+				Constants.UPDATE_PREV_SERVER: self.update_prev_server,
 		}
 
-		# message length dict for received messages
-		self.msg_lens = {
-				Constants.NEW_CLIENT: 1,
-				Constants.NEW_REPUTATION: 3,
-				Constants.ADD_REPUTATION: 2,
-				Constants.NEW_ANNOUNCEMENT: 2,
-				Constants.REPLACE_STP: 2,
-				Constants.NEW_MESSAGE: 3,
-				Constants.NEW_FEEDBACK: 3,
-				Constants.REV_ANNOUNCEMENT: 2,
-				Constants.REPLACE_LTP: 2,
-				Constants.UPDATE_NEIGHBORS: 4,
-				Constants.UPDATE_NEXT_SERVER: 2,
-				Constants.UPDATE_PREV_SERVER: 2
+		# message type dict for received messages
+		self.msg_types = {
+				Constants.NEW_CLIENT: [int],
+				Constants.NEW_REPUTATION: [int, tuple, int],
+				Constants.ADD_REPUTATION: [int, int],
+				Constants.NEW_ANNOUNCEMENT: [list, int],
+				Constants.REPLACE_STP: [list, int],
+				Constants.NEW_MESSAGE: [int, int, int],
+				Constants.NEW_FEEDBACK: [int, int, int],
+				Constants.REV_ANNOUNCEMENT: [list, int],
+				Constants.REPLACE_LTP: [list, int],
+				Constants.UPDATE_NEIGHBORS: [str, int, str, int],
+				Constants.UPDATE_NEXT_SERVER: [str, int],
+				Constants.UPDATE_PREV_SERVER: [str, int],
 		}
 
-		assert set(self.respond.keys()) == set(self.msg_lens.keys())
+		assert set(self.respond.keys()) == set(self.msg_types.keys())
 
 	def sprint(self, s):
 		print('[SERVER] ' + s)
@@ -71,12 +72,12 @@ class Server:
 	def set_prev_server(self, prev_host, prev_port):
 		self.prev_addr = (prev_host, prev_port)
 
-	def encrypt(self, text):
-		# [TODO] replace with ElGamal
+	def encrypt(self, ltp, text):
+		# ElGamal encryption
 		return text
 
-	def decrypt(self, text):
-		# [TODO] replace with ElGamal
+	def decrypt(self, ltp, text):
+		# ElGamal decryption
 		return text
 
 	def announcement_fwd(self, ann_list):
@@ -105,29 +106,16 @@ class Server:
 		ret = (msg_head in self.respond)
 
 		# verify that msg_args length matches expected
-		ret = ret or (len(msg_args) == self.msg_lens[msg_head])
+		ret = ret or (len(msg_args) == len(self.msg_types[msg_head]))
 
 		# verify that all arguments are of the appropriate type
-		try:
-			if msg_head == Constants.UPDATE_NEIGHBORS:
-				ports = int(msg_args[1]), int(msg_args[3])
-			elif msg_head == Constants.UPDATE_NEXT_SERVER or msg_head == Constants.UPDATE_PREV_SERVER:
-				port = int(msg_args[1])
-			elif msg_head in [Constants.NEW_ANNOUNCEMENT, Constants.REV_ANNOUNCEMENT,
-					Constants.REPLACE_STP, Constants.REPLACE_LTP]:
-				ann_list = deserialize(msg_args[0])
-				init_id = int(msg_args[1])
-			elif msg_head == Constants.NEW_MESSAGE:
-				msg_args = [int(_) for _ in msg_args[1:]]
-			else:
-				msg_args = [int(_) for _ in msg_args]
-		except ValueError:
-			ret = False
+		for i in range(len(msg_args)):
+			ret = ret or isinstance(msg_args[i], self.msg_types[msg_head][i])
 
 		return ret
 
 	def new_client(self, msg_head, msg_args):
-		client_ltp = int(msg_args[0])
+		client_ltp = msg_args[0]
 		client_rep = Constants.INIT_REPUTATION
 
 		# initiate new reputation
@@ -135,7 +123,7 @@ class Server:
 		self.new_reputation(Constants.NEW_REPUTATION, rep_args)
 
 	def new_reputation(self, msg_head, msg_args):
-		client_ltp, client_rep, init_id = [int(_) for _ in msg_args]
+		client_ltp, client_rep, init_id = msg_args
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
@@ -144,7 +132,7 @@ class Server:
 			self.sprint('New client with long-term pseudonym: {}'.format(client_ltp))
 
 			# encrypt client reputation
-			client_rep = self.encrypt(client_rep)
+			client_rep = self.encrypt(client_ltp, client_rep)
 
 			# pass reputation to next server
 			send(self.next_addr, [Constants.NEW_REPUTATION, client_ltp, client_rep, init_id])
@@ -154,7 +142,7 @@ class Server:
 			self.add_reputation(Constants.ADD_REPUTATION, rep_args)
 
 	def add_reputation(self, msg_head, msg_args):
-		client_ltp, client_rep = [int(_) for _ in msg_args]
+		client_ltp, client_rep = msg_args
 		if client_ltp in self.ltp_list:
 			return
 
@@ -164,31 +152,25 @@ class Server:
 
 	def new_announcement(self, msg_head, msg_args):
 		ann_list, init_id = msg_args
-		ann_list = deserialize(ann_list)
-		init_id = int(init_id)
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
-				ann_list = dict(self.ltp_list)
+				ann_list = [(k, v) for k, v in self.ltp_list.items()]
 
-			# update, shuffle, and serialize announcement list
+			# update and shuffle announcement list
 			ann_list = self.announcement_fwd(ann_list)
 			ann_list = self.verifiable_shuffle(ann_list)
-			ann_list = serialize(ann_list)
 
 			# pass announcement list to next server
 			send(self.next_addr, [Constants.NEW_ANNOUNCEMENT, ann_list, init_id])
 		else:
 			# initialize add announcement
-			ann_list = serialize(ann_list)
 			ann_args = [ann_list, Constants.INIT_ID]
 			self.replace_stp(Constants.REPLACE_STP, ann_args)
 
 	def replace_stp(self, msg_head, msg_args):
 		ann_list, init_id = msg_args
-		ann_list = deserialize(ann_list)
-		init_id = int(init_id)
 
 		# tell coordinator that announcement phase is finished
 		if init_id == self.server_id:
@@ -200,13 +182,12 @@ class Server:
 
 		# add announcement list to current server and update next server
 		self.sprint("Announcement phase finished. Updated short-term pseudonyms.")
-		self.stp_list = ann_list
-		ann_list = serialize(ann_list)
+		self.stp_list = {k: v for (k, v) in ann_list}
+		print(self.stp_list)
 		send(self.next_addr, [Constants.REPLACE_STP, ann_list, init_id])
 
 	def new_message(self, msg_head, msg_args):
 		client_msg, client_stp, client_sig = msg_args
-		client_stp = str(client_stp)
 
 		# [TODO] verify message, short-term pseudonym, and signature
 		client_rep = self.stp_list[client_stp]
@@ -221,31 +202,25 @@ class Server:
 	# [NOTE] must initiate rev announcement on prev of leader
 	def rev_announcement(self, msg_head, msg_args):
 		ann_list, init_id = msg_args
-		ann_list = deserialize(ann_list)
-		init_id = int(init_id)
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
-				ann_list = self.stp_list
+				ann_list = [(k, v) for k, v in self.stp_list.items()]
 
-			# update, shuffle, and serialize announcement list
+			# update and shuffle announcement list
 			ann_list = self.announcement_bwd(ann_list)
 			ann_list = self.verifiable_shuffle(ann_list)
-			ann_list = serialize(ann_list)
 
 			# pass announcement list to next server
 			send(self.prev_addr, [Constants.REV_ANNOUNCEMENT, ann_list, init_id])
 		else:
 			# initialize add announcement
-			ann_list = serialize(ann_list)
 			ann_args = [ann_list, Constants.INIT_ID]
 			self.replace_ltp(Constants.REPLACE_LTP, ann_args)
 
 	def replace_ltp(self, msg_head, msg_args):
 		ann_list, init_id = msg_args
-		ann_list = deserialize(ann_list)
-		init_id = int(init_id)
 
 		# tell coordinator that it's time to start a new round
 		if init_id == self.server_id:
@@ -256,8 +231,7 @@ class Server:
 			init_id = self.server_id
 
 		# add announcement list to current server and update next server
-		self.ltp_list = ann_list
-		ann_list = serialize(ann_list)
+		self.ltp_list = {k: v for (k, v) in ann_list}
 		send(self.next_addr, [Constants.REPLACE_LTP, ann_list, init_id])
 
 	def update_neighbors(self, msg_head, msg_args):

@@ -6,7 +6,7 @@ from threading import Thread
 
 import config
 from board import MessageBoard
-from util import Constants, send, recv, serialize
+from util import Constants, send, recv
 
 
 
@@ -35,19 +35,37 @@ class Coordinator:
 				Constants.END_ANNOUNCEMENT_PHASE: self.end_announcement_phase,
 		}
 
-		# message length dict for received messages
-		self.msg_lens = {
-				Constants.NEW_SERVER: 3,
-				Constants.END_ANNOUNCEMENT_PHASE: 0,
+		# message type dict for received messages
+		self.msg_types = {
+				Constants.NEW_SERVER: [str, int, int],
+				Constants.END_ANNOUNCEMENT_PHASE: [],
 		}
 
-		assert set(self.respond.keys()) == set(self.msg_lens.keys())
+		assert set(self.respond.keys()) == set(self.msg_types.keys())
 
 	def eprint(self, err):
 		print('[COORDINATOR] ' + err, file=sys.stderr)
 
 	def sprint(self, s):
 		print('[COORDINATOR] ' + s)
+
+	def verify_message(self, msg):
+		if len(msg) == 0:
+			return False
+
+		msg_head, *msg_args = msg
+
+		# verify that msg_head is in respond dict
+		ret = (msg_head in self.respond)
+
+		# verify that msg_args length matches expected
+		ret = ret or (len(msg_args) == len(self.msg_types[msg_head]))
+
+		# verify that all arguments are of the appropriate type
+		for i in range(len(msg_args)):
+			ret = ret or isinstance(msg_args[i], self.msg_types[msg_head][i])
+
+		return ret
 
 	def new_server(self, msg_head, msg_args):
 		# parse args
@@ -75,41 +93,19 @@ class Coordinator:
 		sys.stdout.write('\r# servers: {} | {}'.format(len(self.servers), self.servers))
 		sys.stdout.flush()
 
-	def end_announcement_phase(self, msg_head, msg_args):
-		self.sprint('Beginning message phase...')
-		self.phase = Constants.MESSAGE_PHASE
-
 	def begin_announcement_phase(self):
 		self.sprint('Beginning announcement phase...')
 		# TODO: Randomly pick the initial
 		server_addr = self.servers[0]
-		send(server_addr, [Constants.NEW_ANNOUNCEMENT, serialize({}), Constants.INIT_ID])
+		send(server_addr, [Constants.NEW_ANNOUNCEMENT, [], Constants.INIT_ID])
+
+	def end_announcement_phase(self, msg_head, msg_args):
+		self.sprint('Beginning message phase...')
+		self.phase = Constants.MESSAGE_PHASE
 
 	def end_round(self):
 		# TODO: Don't hardcode the leader
-		send(self.servers[-1], [Constants.REV_ANNOUNCEMENT, serialize({}), Constants.INIT_ID])
-
-	def verify_message(self, msg):
-		if len(msg) == 0:
-			return False
-
-		msg_head, *msg_args = msg
-
-		# verify that msg_head is in respond dict
-		ret = (msg_head in self.respond)
-
-		# verify that msg_args length matches expected
-		ret = ret or (len(msg_args) == self.msg_lens[msg_head])
-
-		# verify that all arguments are of the appropriate type
-		try:
-			if msg_head == Constants.NEW_SERVER:
-				int(msg_args[1])
-				int(msg_args[2])
-		except ValueError:
-			ret = False
-
-		return ret
+		send(self.servers[-1], [Constants.REV_ANNOUNCEMENT, [], Constants.INIT_ID])
 
 	def run(self):
 		while True:

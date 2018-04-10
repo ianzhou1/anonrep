@@ -16,15 +16,15 @@ class MessageBoard:
 				Constants.POST_MESSAGE:	self.post_message,
 				Constants.POST_FEEDBACK: self.post_feedback,
 				Constants.DISP_BOARD: self.disp_board,
-				Constants.END_MESSAGE_PHASE: self.end_message_phase
+				Constants.END_MESSAGE_PHASE: self.end_message_phase,
 		}
 
-		# message length dict for received messages
-		self.msg_lens = {
-				Constants.POST_MESSAGE: 3,
-				Constants.POST_FEEDBACK: 2,
-				Constants.DISP_BOARD: 0,
-				Constants.END_MESSAGE_PHASE: 1
+		# message type dict for received messages
+		self.msg_types = {
+				Constants.POST_MESSAGE: [str, int, int],
+				Constants.POST_FEEDBACK: [int, int],
+				Constants.DISP_BOARD: [],
+				Constants.END_MESSAGE_PHASE: [],
 		}
 
 	def verify_message(self, msg, phase):
@@ -42,23 +42,17 @@ class MessageBoard:
 			return False
 
 		# verify that msg_args length matches expected
-		ret = ret or (len(msg_args) == self.msg_lens[msg_head])
+		ret = ret or (len(msg_args) == len(self.msg_types[msg_head]))
 
 		# verify that all arguments are of the appropriate type
-		try:
-			if msg_head == Constants.POST_MESSAGE:
-				client_stp, client_rep = [int(_) for _ in msg_args[1:]]
-			else:
-				msg_args = [int(_) for _ in msg_args]
-		except ValueError:
-			ret = False
+		for i in range(len(msg_args)):
+			ret = ret or isinstance(msg_args[i], self.msg_types[msg_head][i])
 
 		return ret
 
 	def post_message(self, msg_head, msg_args):
 		client_msg, client_stp, client_rep = msg_args
-		client_stp = int(client_stp)
-		client_rep = int(client_rep)
+		client_rep = client_rep[1]
 
 		# post message to board and increment message id
 		self.board[self.msg_id] = {
@@ -70,7 +64,7 @@ class MessageBoard:
 		self.msg_id += 1
 
 	def post_feedback(self, msg_head, msg_args):
-		client_msg_id, client_vote = [int(_) for _ in msg_args]
+		client_msg_id, client_vote = msg_args
 		# [TODO] verify client message id
 		# post feedback to board
 		client_fb = self.board[client_msg_id][Constants.FB]
