@@ -1,6 +1,6 @@
 import sys
 
-from util import Constants, serialize, send
+from util import Constants, send
 
 # message board class
 class MessageBoard:
@@ -76,8 +76,7 @@ class MessageBoard:
 
 	def disp_board(self, s, msg_head, msg_args):
 		# send message board
-		msg = serialize(self.board)
-		send(s, msg)
+		send(s, self.board)
 
 	def end_message_phase(self, msg_head, msg_args):
 		self.eprint('Round has ended. Starting new round...')

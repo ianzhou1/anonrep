@@ -90,14 +90,3 @@ def powm(base, exp, mod=Constants.MOD):
 # random key
 def randkey(start=0, end=Constants.MOD):
 	return randint(start, end)
-
-# serialize container
-def serialize(c):
-	return json.dumps(c, separators=(',', ':'))
-
-# deserialize container
-def deserialize(s):
-	c = json.loads(s)
-	if not isinstance(c, dict) and not isinstance(c, list):
-		raise ValueError
-	return c
