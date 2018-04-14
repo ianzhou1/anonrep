@@ -127,7 +127,7 @@ class Server:
 
 		return ret
 
-	def new_client(self, msg_head, msg_args):
+	def new_client(self, msg_args):
 		client_ltp = msg_args[0]
 		client_rep = Constants.INIT_REPUTATION
 
@@ -135,7 +135,7 @@ class Server:
 		rep_args = [client_ltp, client_rep, Constants.INIT_ID]
 		self.new_reputation(Constants.NEW_REPUTATION, rep_args)
 
-	def new_reputation(self, msg_head, msg_args):
+	def new_reputation(self, msg_args):
 		client_ltp, client_rep, init_id = msg_args
 
 		if init_id != self.server_id:
@@ -154,7 +154,7 @@ class Server:
 			rep_args = [client_ltp, client_rep]
 			self.add_reputation(Constants.ADD_REPUTATION, rep_args)
 
-	def add_reputation(self, msg_head, msg_args):
+	def add_reputation(self, msg_args):
 		client_ltp, client_rep = msg_args
 		if client_ltp in self.ltp_list:
 			return
@@ -163,7 +163,7 @@ class Server:
 		self.ltp_list[client_ltp] = client_rep
 		send(self.next_addr, [Constants.ADD_REPUTATION, client_ltp, client_rep])
 
-	def new_announcement(self, msg_head, msg_args):
+	def new_announcement(self, msg_args):
 		ann_list, init_id = msg_args
 
 		if init_id != self.server_id:
@@ -182,7 +182,7 @@ class Server:
 			ann_args = [ann_list, Constants.INIT_ID]
 			self.replace_stp(Constants.REPLACE_STP, ann_args)
 
-	def replace_stp(self, msg_head, msg_args):
+	def replace_stp(self, msg_args):
 		ann_list, init_id = msg_args
 
 		# tell coordinator that announcement phase is finished
@@ -199,7 +199,7 @@ class Server:
 		print(self.stp_list)
 		send(self.next_addr, [Constants.REPLACE_STP, ann_list, init_id])
 
-	def new_message(self, msg_head, msg_args):
+	def new_message(self, msg_args):
 		client_msg, client_stp, client_sig = msg_args
 
 		# [TODO] verify message, short-term pseudonym, and signature
@@ -207,14 +207,14 @@ class Server:
 		client_score = client_rep[1]
 		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, client_score])
 
-	def new_feedback(self, msg_head, msg_args):
+	def new_feedback(self, msg_args):
 		client_msg_id, client_vote, client_sig = [int(_) for _ in msg_args]
 
 		# [TODO] verify vote and linkable ring signature
 		send(config.COORDINATOR_ADDR, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
 
 	# [NOTE] must initiate rev announcement on prev of leader
-	def rev_announcement(self, msg_head, msg_args):
+	def rev_announcement(self, msg_args):
 		ann_list, init_id = msg_args
 
 		if init_id != self.server_id:
@@ -233,7 +233,7 @@ class Server:
 			ann_args = [ann_list, Constants.INIT_ID]
 			self.replace_ltp(Constants.REPLACE_LTP, ann_args)
 
-	def replace_ltp(self, msg_head, msg_args):
+	def replace_ltp(self, msg_args):
 		ann_list, init_id = msg_args
 
 		# tell coordinator that it's time to start a new round
@@ -248,15 +248,15 @@ class Server:
 		self.ltp_list = {k: v for (k, v) in ann_list}
 		send(self.next_addr, [Constants.REPLACE_LTP, ann_list, init_id])
 
-	def update_id(self, msg_head, msg_args):
+	def update_id(self, msg_args):
 		self.server_id = msg_args[0]
 		self.sprint('Server id: {}'.format(self.server_id))
 
-	def update_neighbors(self, msg_head, msg_args):
+	def update_neighbors(self, msg_args):
 		prev_addr, next_addr = msg_args
 		prev_addr = tuple(prev_addr)
 		next_addr = tuple(next_addr)
-		
+
 		self.set_prev_server(prev_addr)
 		self.set_next_server(next_addr)
 
@@ -276,7 +276,7 @@ class Server:
 				msg_head, *msg_args = msg
 
 				# respond to received message
-				self.respond[msg_head](msg_head, msg_args)
+				self.respond[msg_head](msg_args)
 			except Exception:
 				traceback.print_exc()
 
@@ -288,7 +288,7 @@ if __name__ == '__main__':
 	server_host = sys.argv[1]
 	server_port = int(sys.argv[2])
 	s = Server(server_host, server_port)
-	
+
 	try:
 		s.run()
 	finally:

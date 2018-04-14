@@ -50,7 +50,7 @@ class MessageBoard:
 
 		return ret
 
-	def post_message(self, msg_head, msg_args):
+	def post_message(self, msg_args):
 		client_msg, client_stp, client_score = msg_args
 
 		# post message to board and increment message id
@@ -62,7 +62,7 @@ class MessageBoard:
 		}
 		self.msg_id += 1
 
-	def post_feedback(self, msg_head, msg_args):
+	def post_feedback(self, msg_args):
 		client_msg_id, client_vote = msg_args
 		# [TODO] verify client message id
 		# post feedback to board
@@ -73,11 +73,11 @@ class MessageBoard:
 			client_fb = (client_fb[0], client_fb[1] + client_vote)
 		self.board[client_msg_id][Constants.FB] = client_fb
 
-	def disp_board(self, s, msg_head, msg_args):
+	def disp_board(self, s, msg_args):
 		# send message board
 		send(s, self.board)
 
-	def end_message_phase(self, msg_head, msg_args):
+	def end_message_phase(self, msg_args):
 		self.eprint('Round has ended. Starting new round...')
 		self.coordinator.phase = Constants.ANNOUNCEMENT_PHASE
 
@@ -92,9 +92,9 @@ class MessageBoard:
 
 		# respond to received message
 		if msg_head in Constants.OPEN_SOCKET:
-			self.respond[msg_head](s, msg_head, msg_args)
+			self.respond[msg_head](s, msg_args)
 		else:
-			self.respond[msg_head](msg_head, msg_args)
+			self.respond[msg_head](msg_args)
 		s.close()
 
 	def eprint(self, err):

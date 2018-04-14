@@ -67,7 +67,7 @@ class Coordinator:
 
 		return ret
 
-	def new_server(self, msg_head, msg_args):
+	def new_server(self, msg_args):
 		server_addr, server_pub_key = msg_args
 		server_addr = tuple(server_addr)
 
@@ -111,7 +111,7 @@ class Coordinator:
 		server_addr = self.servers[0]
 		send(server_addr, [Constants.NEW_ANNOUNCEMENT, [], Constants.INIT_ID])
 
-	def end_announcement_phase(self, msg_head, msg_args):
+	def end_announcement_phase(self, msg_args):
 		self.sprint('Beginning message phase...')
 		self.phase = Constants.MESSAGE_PHASE
 
@@ -144,7 +144,7 @@ class Coordinator:
 				msg_head, *msg_args = msg
 
 				# respond to received message
-				self.respond[msg_head](msg_head, msg_args)
+				self.respond[msg_head](msg_args)
 
 				s.close()
 			except ConnectionAbortedError:
