@@ -1,8 +1,6 @@
 import pytest
 import blockchain as bc
 
-from web3 import EthereumTesterProvider
-
 def test_blockchain():
 	coordinator = bc.LocalBlockchain()
 	client = bc.LocalBlockchain()
