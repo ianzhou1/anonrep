@@ -49,8 +49,12 @@ if __name__ == '__main__':
 	if len(sys.argv) != 3:
 		print('USAGE: python client.py server_host server_port')
 		sys.exit(1)
-	c = Client(sys.argv[1], int(sys.argv[2]))
+
 	show_help()
+	client_host = sys.argv[1]
+	client_port = int(sys.argv[2])
+	c = Client(client_host, client_port)
+	
 	while True:
 		try:
 			s = input('> ').upper()

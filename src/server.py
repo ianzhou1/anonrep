@@ -8,11 +8,14 @@ from Crypto.PublicKey import ElGamal
 
 # server class
 class Server:
-	def __init__(self, host, port, server_id):
+	def __init__(self, host, port):
 		# identification
-		self.server_id = server_id
+		self.server_id = Constants.INIT_ID
+		self.prev_addr = None
+		self.next_addr = None
 
 		# core variables
+		self.eph_key = None
 		self.pri_key = randkey()
 		self.pub_key = powm(Constants.G, self.pri_key)
 		self.ltp_list = {} # long-term pseudonyms and encrypted reputation scores
@@ -24,7 +27,7 @@ class Server:
 		self.ss.bind(self.addr)
 		self.ss.listen(5)
 
-		send(config.COORDINATOR_ADDR, [Constants.NEW_SERVER, host, port, server_id])
+		send(config.COORDINATOR_ADDR, [Constants.NEW_SERVER, self.addr, self.pub_key])
 
 		# respond dict for received messages
 		self.respond = {
@@ -37,25 +40,23 @@ class Server:
 				Constants.NEW_FEEDBACK: self.new_feedback,
 				Constants.REV_ANNOUNCEMENT: self.rev_announcement,
 				Constants.REPLACE_LTP: self.replace_ltp,
+				Constants.UPDATE_ID: self.update_id,
 				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
-				Constants.UPDATE_NEXT_SERVER: self.update_next_server,
-				Constants.UPDATE_PREV_SERVER: self.update_prev_server,
 		}
 
 		# message type dict for received messages
 		self.msg_types = {
 				Constants.NEW_CLIENT: [int],
-				Constants.NEW_REPUTATION: [int, tuple, int],
-				Constants.ADD_REPUTATION: [int, int],
+				Constants.NEW_REPUTATION: [int, list, int],
+				Constants.ADD_REPUTATION: [int, list],
 				Constants.NEW_ANNOUNCEMENT: [list, int],
 				Constants.REPLACE_STP: [list, int],
-				Constants.NEW_MESSAGE: [int, int, int],
+				Constants.NEW_MESSAGE: [str, int, int],
 				Constants.NEW_FEEDBACK: [int, int, int],
 				Constants.REV_ANNOUNCEMENT: [list, int],
 				Constants.REPLACE_LTP: [list, int],
-				Constants.UPDATE_NEIGHBORS: [str, int, str, int],
-				Constants.UPDATE_NEXT_SERVER: [str, int],
-				Constants.UPDATE_PREV_SERVER: [str, int],
+				Constants.UPDATE_ID: [int],
+				Constants.UPDATE_NEIGHBORS: [list, list],
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
@@ -66,29 +67,41 @@ class Server:
 	def eprint(self, err):
 		print('[SERVER] ' + err, file=sys.stderr)
 
-	def set_next_server(self, next_host, next_port):
-		self.next_addr = (next_host, next_port)
+	def set_prev_server(self, prev_addr):
+		self.prev_addr = prev_addr
 
-	def set_prev_server(self, prev_host, prev_port):
-		self.prev_addr = (prev_host, prev_port)
+	def set_next_server(self, next_addr):
+		self.next_addr = next_addr
 
-	def encrypt(self, ltp, text):
+	def encrypt(self, ltp, rep, server_pub_keys):
 		# ElGamal encryption
-		return text
+		key = randkey()
+		secret, text = rep
 
-	def decrypt(self, ltp, text):
+		secret = (secret * powm(Constants.G, key)) % Constants.MOD
+		text = (text * powm(secret, self.pri_key)) % Constants.MOD
+		for server_pub_key in server_pub_keys:
+			text = (text * powm(server_pub_key, key)) % Constants.MOD
+
+		return (secret, text)
+
+	def decrypt(self, ltp, rep):
 		# ElGamal decryption
-		return text
+		secret, text = rep
+
+		text = (text * powm(secret, Constants.MOD - 2)) % Constants.MOD
+
+		return (secret, text)
 
 	def announcement_fwd(self, ann_list):
 		self.eph_key = randkey()
 
-		# [TODO] replace with forward encrypt/decrypt
+		# [TODO] replace with forward encrypt (nym) and decrypt (rep)
 		ret = ann_list
 		return ret
 
 	def announcement_bwd(self, ann_list):
-		# [TODO] replace with backward encrypt/decrypt
+		# [TODO] replace with backward decrypt (nym) and encrypt (rep)
 		ret = ann_list
 		return ret
 
@@ -106,11 +119,11 @@ class Server:
 		ret = (msg_head in self.respond)
 
 		# verify that msg_args length matches expected
-		ret = ret or (len(msg_args) == len(self.msg_types[msg_head]))
+		ret = ret and (len(msg_args) == len(self.msg_types[msg_head]))
 
 		# verify that all arguments are of the appropriate type
 		for i in range(len(msg_args)):
-			ret = ret or isinstance(msg_args[i], self.msg_types[msg_head][i])
+			ret = ret and isinstance(msg_args[i], self.msg_types[msg_head][i])
 
 		return ret
 
@@ -132,7 +145,7 @@ class Server:
 			self.sprint('New client with long-term pseudonym: {}'.format(client_ltp))
 
 			# encrypt client reputation
-			client_rep = self.encrypt(client_ltp, client_rep)
+			client_rep = self.encrypt(client_ltp, client_rep, [])
 
 			# pass reputation to next server
 			send(self.next_addr, [Constants.NEW_REPUTATION, client_ltp, client_rep, init_id])
@@ -191,7 +204,8 @@ class Server:
 
 		# [TODO] verify message, short-term pseudonym, and signature
 		client_rep = self.stp_list[client_stp]
-		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, client_rep])
+		client_score = client_rep[1]
+		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, client_score])
 
 	def new_feedback(self, msg_head, msg_args):
 		client_msg_id, client_vote, client_sig = [int(_) for _ in msg_args]
@@ -234,20 +248,17 @@ class Server:
 		self.ltp_list = {k: v for (k, v) in ann_list}
 		send(self.next_addr, [Constants.REPLACE_LTP, ann_list, init_id])
 
+	def update_id(self, msg_head, msg_args):
+		self.server_id = msg_args[0]
+		self.sprint('Server id: {}'.format(self.server_id))
+
 	def update_neighbors(self, msg_head, msg_args):
-		self.sprint('New Neighbors:')
-		self.sprint('Prev: {}'.format((msg_args[0], msg_args[1])))
-		self.sprint('Next: {}'.format((msg_args[2], msg_args[3])))
-		self.set_prev_server(msg_args[0], int(msg_args[1]))
-		self.set_next_server(msg_args[2], int(msg_args[3]))
-
-	def update_next_server(self, msg_head, msg_args):
-		self.sprint('New next server: {}'.format((msg_args[0], msg_args[1])))
-		self.set_next_server(msg_args[0], int(msg_args[1]))
-
-	def update_prev_server(self, msg_head, msg_args):
-		self.sprint('New prev server: {}'.format((msg_args[0], msg_args[1])))
-		self.set_prev_server(msg_args[0], int(msg_args[1]))
+		prev_addr, next_addr = msg_args
+		prev_addr = tuple(prev_addr)
+		next_addr = tuple(next_addr)
+		
+		self.set_prev_server(prev_addr)
+		self.set_next_server(next_addr)
 
 	def run(self):
 		while True:
@@ -259,7 +270,7 @@ class Server:
 
 				# verify message information
 				if not self.verify_message(msg):
-					self.eprint('Error processing message.')
+					self.eprint('Error processing ' + msg + '.')
 					continue
 
 				msg_head, *msg_args = msg
@@ -270,10 +281,14 @@ class Server:
 				traceback.print_exc()
 
 if __name__ == '__main__':
-	if len(sys.argv) != 4:
-		print('USAGE: python server.py host port server_id')
+	if len(sys.argv) != 3:
+		print('USAGE: python server.py host port')
 		sys.exit(1)
-	s = Server(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
+
+	server_host = sys.argv[1]
+	server_port = int(sys.argv[2])
+	s = Server(server_host, server_port)
+	
 	try:
 		s.run()
 	finally:

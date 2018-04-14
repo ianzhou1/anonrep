@@ -10,14 +10,15 @@ class Constants:
 	INTEGER_SIZE = 8 # number of bytes that will be used to denote the size of payload
 	BUFFER_SIZE = 4096 # socket buffer receive buffer size
 	ENCODING = 'UTF-8' # socket encoding
-	INIT_REPUTATION = (1, 0) # initial reputation
-	INIT_FEEDBACK = (0, 0) # initial feedback
+	INIT_REPUTATION = [1, 20] # initial reputation
+	INIT_FEEDBACK = [0, 0] # initial feedback
 	INIT_ID = -1 # id indicating initial phase
 
 	MESSAGE_PHASE_LENGTH_IN_SECS = 10
 	FEEDBACK_PHASE_LENGTH_IN_SECS = 10
 
 	# coordinator phases
+	REGISTRATION_PHASE = 'REGISTRATION_PHASE'
 	ANNOUNCEMENT_PHASE = 'ANNOUNCEMENT_PHASE'
 	MESSAGE_PHASE = 'MESSAGE_PHASE'
 	FEEDBACK_PHASE = 'FEEDBACK_PHASE'
@@ -36,9 +37,8 @@ class Constants:
 	NEW_FEEDBACK = 'NEW_FEEDBACK'
 	REV_ANNOUNCEMENT = 'REV_ANNOUNCEMENT'
 	REPLACE_LTP = 'REPLACE_LTP'
+	UPDATE_ID = 'UPDATE_ID'
 	UPDATE_NEIGHBORS = 'UPDATE_NEIGHBORS'
-	UPDATE_NEXT_SERVER = 'NEW_NEXT_SERVER'
-	UPDATE_PREV_SERVER = 'NEW_PREV_SERVER'
 
 	# message board headers
 	POST_MESSAGE = 'POST_MESSAGE'

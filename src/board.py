@@ -42,23 +42,22 @@ class MessageBoard:
 			return False
 
 		# verify that msg_args length matches expected
-		ret = ret or (len(msg_args) == len(self.msg_types[msg_head]))
+		ret = ret and (len(msg_args) == len(self.msg_types[msg_head]))
 
 		# verify that all arguments are of the appropriate type
 		for i in range(len(msg_args)):
-			ret = ret or isinstance(msg_args[i], self.msg_types[msg_head][i])
+			ret = ret and isinstance(msg_args[i], self.msg_types[msg_head][i])
 
 		return ret
 
 	def post_message(self, msg_head, msg_args):
-		client_msg, client_stp, client_rep = msg_args
-		client_rep = client_rep[1]
+		client_msg, client_stp, client_score = msg_args
 
 		# post message to board and increment message id
 		self.board[self.msg_id] = {
 				Constants.MSG: client_msg,
 				Constants.NYM: client_stp,
-				Constants.REP: client_rep,
+				Constants.REP: client_score,
 				Constants.FB: Constants.INIT_FEEDBACK
 		}
 		self.msg_id += 1

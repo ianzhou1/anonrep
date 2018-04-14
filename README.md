@@ -14,7 +14,7 @@ python src/coordinator.py
 
 Then, start up the normal servers:
 ```
-python src/server.py [server_host] [server_port] [server_id]
+python src/server.py [server_host] [server_port]
 ```
 
 Then, start up clients:
