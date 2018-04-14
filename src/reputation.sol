@@ -1,37 +1,14 @@
 pragma solidity ^0.4.0;
 
-// contract Greeter {
-//     string public greeting;
-//     mapping (address => int) public numTokens;
-
-//     function Greeter() {
-//         greeting = 'Hello';
-//     }
-
-//     function setGreeting(string _greeting) public {
-//         greeting = _greeting;
-//     }
-
-//     function greet() constant returns (string) {
-//         return greeting;
-//     }
-
-//     function getAddress() view returns (address) {
-//         return msg.sender;
-//     }
-// }
-
 contract Reputation {
     address public owner;
-    mapping (address => bool) public accountActive;
     mapping (address => uint) public balances;
 
-    event CreateWallet(address _addr);
     event AddReputation(address _addr, uint _rep);
     event RemoveReputation(address _addr, uint _rep);
     event Transfer(address _from, address _to);
 
-    function Reputation() {
+    function Reputation() public {
         owner = msg.sender;
     }
 
@@ -45,7 +22,7 @@ contract Reputation {
     }
 
     modifier addressValid(address _addr) {
-        require(accountActive[_addr] = true);
+        require(_addr != 0x0);
         _;
     }
 
@@ -58,31 +35,22 @@ contract Reputation {
      * REPUTATION FUNCTIONS
      */
 
-    function getBalance(address _addr) public view {
+    function getBalance(address _addr) public view returns (uint) {
         return balances[_addr];
     }
 
-    function isActive(address _addr) public view {
-        return accountActive[_addr];
-    }
-
-    function createWallet(address _addr) public onlyOwner {
-        accountActive[_addr] = true;
-        CreateWallet(_addr);
-    }
-
-    function addReputation(address _addr, uint _rep) public onlyOwner addressValid(_addr) {
+    function addReputation(address _addr, uint _rep) public onlyOwner {
         uint overflowCheck = balances[_addr];
         balances[_addr] += _rep;
         // check for overflow
         assert(balances[_addr] >= overflowCheck);
-        AddReputation(_addr, _rep);
+        emit AddReputation(_addr, _rep);
     }
 
     function removeReputation(address _addr, uint _rep) public onlyOwner addressValid(_addr) {
         require(balances[_addr] >= _rep);
         balances[_addr] -= _rep;
-        RemoveReputation(_addr, _rep);
+        emit RemoveReputation(_addr, _rep);
     }
 
     function transfer(address _from, address _to) public onlyOwner addressValid(_from) addressValid(_to) {
@@ -92,6 +60,6 @@ contract Reputation {
         balances[_from] -= 1;
         balances[_to] += 1;
 
-        Transfer(_from, _to);
+        emit Transfer(_from, _to);
     }
 }
