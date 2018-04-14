@@ -28,3 +28,6 @@ Then, start up clients:
 python src/client.py [server_host] [server_port]
 ```
 
+## Testing
+Run `pytest` to run tests.
+
