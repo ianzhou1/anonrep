@@ -93,7 +93,10 @@ class MessageBoard:
 
 		# respond to received message
 		if msg_head in Constants.OPEN_SOCKET:
-			self.respond[msg_head](s, msg_head, msg_args)
+			try:
+				self.respond[msg_head](s, msg_head, msg_args)
+			finally:
+				s.close()
 		else:
 			self.respond[msg_head](msg_head, msg_args)
 		s.close()

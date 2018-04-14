@@ -3,7 +3,8 @@ import re
 import sys
 
 import config
-from util import Constants, powm, randkey, send, sendrecv
+from blockchain import GanacheBlockchain
+from util import Constants, powm, randkey, send, sendrecv, serialize
 
 # client class
 class Client:
@@ -14,6 +15,14 @@ class Client:
 
 		# socket variables
 		self.server_addr = (server_host, server_port)
+
+		# connect to blockchain
+		self.blockchain = GanacheBlockchain()
+		contract_addr = sendrecv(config.COORDINATOR_ADDR, [Constants.GET_CONTRACT_ADDRESS])
+		self.blockchain.connect_to_contract('reputation.sol', contract_addr)
+		print('Contract address: {}'.format(contract_addr))
+
+		self.wallet = GanacheBlockchain.generate_keypair()
 
 		# new client
 		send(self.server_addr, [Constants.NEW_CLIENT, self.pub_key])
@@ -29,7 +38,15 @@ class Client:
 	def post(self, msg, rep):
 		# new message post
 		# TODO: Find wallets that suffice, use them.
-		send(self.server_addr, [Constants.NEW_MESSAGE, msg, self.get_nym(), c.sign(msg)])
+		if self.blockchain.get_balance(self.wallet) < rep:
+			print('Error: You do not have enough reputation to post this.')
+			return
+		round_num = sendrecv(config.COORDINATOR_ADDR, [Constants.GET_ROUND_NUM])
+		to_sign = serialize({
+			'msg': msg,
+			'wallets': [GanacheBlockchain.sign(self.wallet.address, round_num)]
+			})
+		send(self.server_addr, [Constants.NEW_MESSAGE, to_sign, self.get_nym(), c.sign(to_sign)])
 
 	def vote(self, amount, msg_id):
 		# TODO: verify server-side that amount is either +1 or -1

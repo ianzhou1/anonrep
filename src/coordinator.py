@@ -5,6 +5,7 @@ import traceback
 from threading import Thread
 
 import config
+from blockchain import LocalBlockchain
 from board import MessageBoard
 from util import Constants, send, recv
 
@@ -13,11 +14,17 @@ from util import Constants, send, recv
 # coordinator server
 class Coordinator:
 	def __init__(self, host, port):
+		# connect to blockchain
+		self.blockchain = LocalBlockchain()
+		self.contract_address = self.blockchain.deploy_contract('reputation.sol')
+		print('Contract address: {}'.format(self.contract_address))
+
 		self.addr = (host, port)
 		self.ss = socket.socket()
 		self.ss.bind(self.addr)
 		self.ss.listen(5)
 
+		self.round_num = 0
 		self.phase = Constants.ANNOUNCEMENT_PHASE
 		self.board = MessageBoard(self)
 
@@ -31,12 +38,16 @@ class Coordinator:
 
 		# respond dict for received messages
 		self.respond = {
+				Constants.GET_ROUND_NUM: self.get_round_num,
+				Constants.GET_CONTRACT_ADDRESS: self.get_contract_address,
 				Constants.NEW_SERVER: self.new_server,
 				Constants.END_ANNOUNCEMENT_PHASE: self.end_announcement_phase,
 		}
 
 		# message type dict for received messages
 		self.msg_types = {
+				Constants.GET_ROUND_NUM: [],
+				Constants.GET_CONTRACT_ADDRESS: [],
 				Constants.NEW_SERVER: [str, int, int],
 				Constants.END_ANNOUNCEMENT_PHASE: [],
 		}
@@ -66,6 +77,12 @@ class Coordinator:
 			ret = ret or isinstance(msg_args[i], self.msg_types[msg_head][i])
 
 		return ret
+
+	def get_round_num(self, s, msg_head, msg_args):
+		send(s, self.round_num)
+
+	def get_contract_address(self, s, msg_head, msg_args):
+		send(s, self.contract_address)
 
 	def new_server(self, msg_head, msg_args):
 		# parse args
@@ -130,8 +147,13 @@ class Coordinator:
 				msg_head, *msg_args = msg
 
 				# respond to received message
-				self.respond[msg_head](msg_head, msg_args)
-
+				if msg_head in Constants.OPEN_SOCKET:
+					try:
+						self.respond[msg_head](s, msg_head, msg_args)
+					finally:
+						s.close()
+				else:
+					self.respond[msg_head](msg_head, msg_args)
 				s.close()
 			except ConnectionAbortedError:
 				print()
@@ -165,5 +187,6 @@ if __name__ == '__main__':
 			c.end_round()
 			while c.phase == Constants.FEEDBACK_PHASE:
 				time.sleep(0.1)
+			c.round_num += 1
 	finally:
 		c.ss.close()

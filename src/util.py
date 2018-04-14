@@ -25,6 +25,8 @@ class Constants:
 	# coordinator server headers
 	NEW_SERVER = 'NEW_SERVER'
 	END_ANNOUNCEMENT_PHASE = 'END_ANNOUNCEMENT_PHASE'
+	GET_CONTRACT_ADDRESS = 'GET_CONTRACT_ADDRESS'
+	GET_ROUND_NUM = 'GET_ROUND_NUM'
 
 	# server message headers
 	NEW_CLIENT = 'NEW_CLIENT'
@@ -47,7 +49,7 @@ class Constants:
 	END_MESSAGE_PHASE = 'END_MESSAGE_PHASE'
 
 	# headers requiring open socket
-	OPEN_SOCKET = set([DISP_BOARD])
+	OPEN_SOCKET = set([DISP_BOARD, GET_CONTRACT_ADDRESS, GET_ROUND_NUM])
 
 	# message board keys
 	MSG = 'msg' # message
@@ -90,3 +92,14 @@ def powm(base, exp, mod=Constants.MOD):
 # random key
 def randkey(start=0, end=Constants.MOD):
 	return randint(start, end)
+
+# serialize container
+def serialize(c):
+	return json.dumps(c, separators=(',', ':'))
+
+# deserialize container
+def deserialize(s):
+	c = json.loads(s)
+	if not isinstance(c, dict) and not isinstance(c, list):
+		raise ValueError
+	return c

@@ -59,7 +59,6 @@ contract Reputation {
 
         balances[_from] -= 1;
         balances[_to] += 1;
-
         emit Transfer(_from, _to);
     }
 }
