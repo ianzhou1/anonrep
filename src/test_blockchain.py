@@ -22,6 +22,9 @@ def test_blockchain():
 	with pytest.raises(ValueError):
 		coordinator.remove_reputation(account1.address, 500)
 
+	# test signatures
 	test_message = 'TEST MESSAGE'
 	x = bc.sign(account1, test_message)
 	assert bc.verify(account1.address, test_message, x.signature)
+
+	assert not bc.verify(account1.address, 'nope', x.signature)
