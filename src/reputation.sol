@@ -4,9 +4,9 @@ contract Reputation {
     address public owner;
     mapping (address => uint) public balances;
 
-    event AddReputation(address _addr, uint _rep);
-    event RemoveReputation(address _addr, uint _rep);
-    event Transfer(address _from, address _to);
+    event AddReputation(address indexed _addr, uint _rep);
+    event RemoveReputation(address indexed _addr, uint _rep);
+    event Transfer(address indexed _from, address indexed _to);
 
     function Reputation() public {
         owner = msg.sender;
