@@ -35,31 +35,31 @@ class Client:
 		# TODO: verify server-side that amount is either +1 or -1
 		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, amount, c.sign('{};{}'.format(msg_id, amount))])
 
-def show_help():
-	print('Instructions:')
-	print('--------------------------------------------------------')
-	print('HELP           : Displays this help message')
-	print('SHOW           : Shows message')
-	print('WRITE [rep]    : Write a message with reputation [rep]')
-	print('VOTE UP [num]  : Votes up the message with ID [num]')
-	print('VOTE DOWN [num]: Votes down the message with ID [num]')
-	print('--------------------------------------------------------')
+	def show_help(self):
+		print('Instructions:')
+		print('--------------------------------------------------------')
+		print('HELP           : Displays this help message')
+		print('SHOW           : Shows message')
+		print('WRITE [rep]    : Write a message with reputation [rep]')
+		print('VOTE UP [num]  : Votes up the message with ID [num]')
+		print('VOTE DOWN [num]: Votes down the message with ID [num]')
+		print('--------------------------------------------------------')
 
 if __name__ == '__main__':
 	if len(sys.argv) != 3:
 		print('USAGE: python client.py server_host server_port')
 		sys.exit(1)
 
-	show_help()
 	client_host = sys.argv[1]
 	client_port = int(sys.argv[2])
 	c = Client(client_host, client_port)
-	
+	c.show_help()
+
 	while True:
 		try:
 			s = input('> ').upper()
 			if s == 'HELP':
-				show_help()
+				c.show_help()
 			elif s == 'SHOW':
 				messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
 				pprint.PrettyPrinter(indent=4).pprint(messages)
