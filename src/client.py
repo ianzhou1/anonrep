@@ -3,7 +3,7 @@ import re
 import sys
 
 import config
-from util import Constants, powm, randkey, send, sendrecv
+from util import Constants, send, sendrecv, powm, modinv, sighash, randkey, randkeyRP
 
 # client class
 class Client:
@@ -11,6 +11,7 @@ class Client:
 		# core variables
 		self.pri_key = randkey()
 		self.pub_key = powm(Constants.G, self.pri_key)
+		self.generator = None
 
 		# socket variables
 		self.server_addr = (server_host, server_port)
@@ -19,17 +20,25 @@ class Client:
 		send(self.server_addr, [Constants.NEW_CLIENT, self.pub_key])
 
 	def sign(self, msg):
-		# TODO: use elgamal signing
-		return 0
+		# ElGamal signature
+		k = randkeyRP(1, Constants.MOD - 2)
+		r = powm(self.generator, k, Constants.MOD - 1)
+		s = (sighash(msg) - self.pri_key * r) * modinv(k, Constants.MOD - 1)
+		s %= (Constants.MOD - 1)
 
-	def get_nym(self):
-		# TODO: get nym and return it
-		return self.pub_key
+		return (r, s)
+
+	def get_stp(self):
+		return powm(self.generator, self.pri_key)
 
 	def post(self, msg, rep):
-		# new message post
+		self.generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
+
+		stp = self.get_stp()
+		sig = c.sign(msg)
+
 		# TODO: Find wallets that suffice, use them.
-		send(self.server_addr, [Constants.NEW_MESSAGE, msg, self.get_nym(), c.sign(msg)])
+		send(self.server_addr, [Constants.NEW_MESSAGE, msg, stp, sig])
 
 	def vote(self, amount, msg_id):
 		# TODO: verify server-side that amount is either +1 or -1

@@ -3,9 +3,9 @@ import sys
 import traceback
 
 import config
-from util import Constants, randkey, powm, send, recv
+from util import Constants, send, recv, powm, modinv, sighash, randkey
 from Crypto.PublicKey import ElGamal
-4 
+
 # server class
 class Server:
 	def __init__(self, host, port):
@@ -44,6 +44,7 @@ class Server:
 				Constants.REPLACE_LTP: self.replace_ltp,
 				Constants.UPDATE_ID: self.update_id,
 				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
+				Constants.GET_GENERATOR: self.get_generator,
 		}
 
 		# message type dict for received messages
@@ -53,12 +54,13 @@ class Server:
 				Constants.ADD_REPUTATION: [int, list],
 				Constants.NEW_ANNOUNCEMENT: [list, int, int],
 				Constants.REPLACE_STP: [list, int, int],
-				Constants.NEW_MESSAGE: [str, int, int],
-				Constants.NEW_FEEDBACK: [int, int, int],
+				Constants.NEW_MESSAGE: [str, int, list],
+				Constants.NEW_FEEDBACK: [int, int, list],
 				Constants.REV_ANNOUNCEMENT: [list, list, int],
 				Constants.REPLACE_LTP: [list, int],
 				Constants.UPDATE_ID: [int],
 				Constants.UPDATE_NEIGHBORS: [list, list],
+				Constants.GET_GENERATOR: [],
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
@@ -100,7 +102,7 @@ class Server:
 		secret_c, text = rep
 
 		secret = powm(secret_c, self.pri_key)
-		text = (text * powm(secret, Constants.MOD - 2)) % Constants.MOD
+		text = (text * modinv(secret)) % Constants.MOD
 
 		return (secret_c, text)
 
@@ -132,7 +134,7 @@ class Server:
 		return ann_list
 
 	def verify_message(self, msg):
-		if len(msg) < 2:
+		if len(msg) == 0:
 			return False
 
 		msg_head, *msg_args = msg
@@ -148,6 +150,10 @@ class Server:
 			ret = ret and isinstance(msg_args[i], self.msg_types[msg_head][i])
 
 		return ret
+
+	def verify_signature(self, msg, stp, sig):
+		r, s = sig
+		return powm(self.generator, sighash(msg), Constants.MOD - 1) == (powm(stp, r, Constants.MOD - 1) * powm(r, s, Constants.MOD - 1)) % (Constants.MOD - 1)
 
 	def new_client(self, msg_args):
 		client_ltp = msg_args[0]
@@ -221,21 +227,29 @@ class Server:
 			init_id = self.server_id
 
 		# add announcement list to current server and update next server
-		self.sprint("Announcement phase finished. Updated short-term pseudonyms.")
+		self.sprint('Announcement phase finished. Updated short-term pseudonyms.')
 		self.stp_list = {k: v for (k, v) in ann_list}
 		print('stp list: ' + str(self.stp_list))
 		send(self.next_addr, [Constants.REPLACE_STP, ann_list, generator, init_id])
 
+	def get_generator(self, s, msg_args):
+		# send global generator
+		send(s, self.generator)
+
 	def new_message(self, msg_args):
 		client_msg, client_stp, client_sig = msg_args
 
-		# [TODO] verify message, short-term pseudonym, and signature
+		# verify message, pseudonym, and signature
+		if not self.verify_signature(client_msg, client_stp, client_sig):
+			self.sprint('Signature verification failed.')
+			return
+
 		client_rep = self.stp_list[client_stp]
 		client_score = client_rep[1]
 		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, client_score])
 
 	def new_feedback(self, msg_args):
-		client_msg_id, client_vote, client_sig = [int(_) for _ in msg_args]
+		client_msg_id, client_vote, client_sig = msg_args
 
 		# [TODO] verify vote and linkable ring signature
 		send(config.COORDINATOR_ADDR, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
@@ -295,17 +309,21 @@ class Server:
 				# accept and receive socket message
 				s, addr = self.ss.accept()
 				msg = recv(s)
-				s.close()
 
 				# verify message information
 				if not self.verify_message(msg):
 					self.eprint('Error processing ' + str(msg) + '.')
+					s.close()
 					continue
 
 				msg_head, *msg_args = msg
 
 				# respond to received message
-				self.respond[msg_head](msg_args)
+				if msg_head in Constants.OPEN_SOCKET:
+					self.respond[msg_head](s, msg_args)
+				else:
+					self.respond[msg_head](msg_args)
+				s.close()
 			except Exception:
 				traceback.print_exc()
 
