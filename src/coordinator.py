@@ -109,7 +109,7 @@ class Coordinator:
 		time.sleep(0.1)
 
 		server_addr = self.servers[0]
-		send(server_addr, [Constants.NEW_ANNOUNCEMENT, [], Constants.INIT_ID])
+		send(server_addr, [Constants.NEW_ANNOUNCEMENT, [], Constants.G, Constants.INIT_ID])
 
 	def end_announcement_phase(self, msg_args):
 		self.sprint('Beginning message phase...')
@@ -118,7 +118,7 @@ class Coordinator:
 	def end_round(self):
 		# TODO: Don't hardcode the leader
 		server_addr = self.servers[-1]
-		send(server_addr, [Constants.REV_ANNOUNCEMENT, [], Constants.INIT_ID])
+		send(server_addr, [Constants.REV_ANNOUNCEMENT, [], [], Constants.INIT_ID])
 
 	def run(self):
 		while True:
