@@ -5,7 +5,7 @@ import traceback
 import config
 from util import Constants, randkey, powm, send, recv
 from Crypto.PublicKey import ElGamal
-
+4 
 # server class
 class Server:
 	def __init__(self, host, port):
@@ -20,6 +20,8 @@ class Server:
 		self.pub_key = powm(Constants.G, self.pri_key)
 		self.ltp_list = {} # long-term pseudonyms and encrypted reputation scores
 		self.stp_list = {} # short-term pseudonyms and decrypted reputation scores
+		self.generator = None # round-based global generator
+		self.nym_list = {} # pseudonym list used for decryption
 
 		# socket variables
 		self.addr = (host, port)
@@ -47,13 +49,13 @@ class Server:
 		# message type dict for received messages
 		self.msg_types = {
 				Constants.NEW_CLIENT: [int],
-				Constants.NEW_REPUTATION: [int, list, int],
+				Constants.NEW_REPUTATION: [int, list, list, int],
 				Constants.ADD_REPUTATION: [int, list],
-				Constants.NEW_ANNOUNCEMENT: [list, int],
-				Constants.REPLACE_STP: [list, int],
+				Constants.NEW_ANNOUNCEMENT: [list, int, int],
+				Constants.REPLACE_STP: [list, int, int],
 				Constants.NEW_MESSAGE: [str, int, int],
 				Constants.NEW_FEEDBACK: [int, int, int],
-				Constants.REV_ANNOUNCEMENT: [list, int],
+				Constants.REV_ANNOUNCEMENT: [list, list, int],
 				Constants.REPLACE_LTP: [list, int],
 				Constants.UPDATE_ID: [int],
 				Constants.UPDATE_NEIGHBORS: [list, list],
@@ -73,37 +75,57 @@ class Server:
 	def set_next_server(self, next_addr):
 		self.next_addr = next_addr
 
-	def encrypt(self, ltp, rep, server_pub_keys):
+	def encryptPowm(self, nym):
+		return powm(nym, self.eph_key)
+
+	def decryptPowm(self, nym):
+		return self.nym_list[nym]
+
+	def encryptElGamal(self, rep, server_pub_keys):
 		# ElGamal encryption
 		key = randkey()
-		secret, text = rep
+		secret_c, text = rep
+		secret_c = (secret_c * powm(Constants.G, key)) % Constants.MOD
 
-		secret = (secret * powm(Constants.G, key)) % Constants.MOD
-		text = (text * powm(secret, self.pri_key)) % Constants.MOD
+		secret = powm(secret_c, self.pri_key)
+		text = (text * secret) % Constants.MOD
 		for server_pub_key in server_pub_keys:
 			text = (text * powm(server_pub_key, key)) % Constants.MOD
+		server_pub_keys.append(self.pub_key)
 
-		return (secret, text)
+		return (secret_c, text)
 
-	def decrypt(self, ltp, rep):
+	def decryptElGamal(self, rep):
 		# ElGamal decryption
-		secret, text = rep
+		secret_c, text = rep
 
+		secret = powm(secret_c, self.pri_key)
 		text = (text * powm(secret, Constants.MOD - 2)) % Constants.MOD
 
-		return (secret, text)
+		return (secret_c, text)
 
 	def announcement_fwd(self, ann_list):
-		self.eph_key = randkey()
+		# forward encrypt (nym) and decrypt (rep)
+		new_ann_list = []
+		for nym, rep in ann_list:
+			new_nym = self.encryptPowm(nym)
+			new_rep = self.decryptElGamal(rep)
+			self.nym_list[new_nym] = nym
+			new_ann_list.append((new_nym, new_rep))
 
-		# [TODO] replace with forward encrypt (nym) and decrypt (rep)
-		ret = ann_list
-		return ret
+		return new_ann_list
 
-	def announcement_bwd(self, ann_list):
-		# [TODO] replace with backward decrypt (nym) and encrypt (rep)
-		ret = ann_list
-		return ret
+	def announcement_bwd(self, ann_list, server_pub_keys):
+		# backward decrypt (nym) and encrypt (rep)
+		new_ann_list = []
+		for nym, rep in ann_list:
+			new_nym = self.decryptPowm(nym)
+			new_rep = self.encryptElGamal(rep, server_pub_keys)
+			new_ann_list.append((new_nym, new_rep))
+
+		self.nym_list.clear()
+
+		return new_ann_list
 
 	def verifiable_shuffle(self, ann_list):
 		# [TODO] replace with verifiable shuffle
@@ -132,11 +154,11 @@ class Server:
 		client_rep = Constants.INIT_REPUTATION
 
 		# initiate new reputation
-		rep_args = [client_ltp, client_rep, Constants.INIT_ID]
-		self.new_reputation(Constants.NEW_REPUTATION, rep_args)
+		rep_args = [client_ltp, client_rep, [], Constants.INIT_ID]
+		self.new_reputation(rep_args)
 
 	def new_reputation(self, msg_args):
-		client_ltp, client_rep, init_id = msg_args
+		client_ltp, client_rep, server_pub_keys, init_id = msg_args
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
@@ -145,14 +167,14 @@ class Server:
 			self.sprint('New client with long-term pseudonym: {}'.format(client_ltp))
 
 			# encrypt client reputation
-			client_rep = self.encrypt(client_ltp, client_rep, [])
+			client_rep = self.encryptElGamal(client_rep, server_pub_keys)
 
 			# pass reputation to next server
-			send(self.next_addr, [Constants.NEW_REPUTATION, client_ltp, client_rep, init_id])
+			send(self.next_addr, [Constants.NEW_REPUTATION, client_ltp, client_rep, server_pub_keys, init_id])
 		else:
 			# initiate add reputation
 			rep_args = [client_ltp, client_rep]
-			self.add_reputation(Constants.ADD_REPUTATION, rep_args)
+			self.add_reputation(rep_args)
 
 	def add_reputation(self, msg_args):
 		client_ltp, client_rep = msg_args
@@ -164,7 +186,7 @@ class Server:
 		send(self.next_addr, [Constants.ADD_REPUTATION, client_ltp, client_rep])
 
 	def new_announcement(self, msg_args):
-		ann_list, init_id = msg_args
+		ann_list, generator, init_id = msg_args
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
@@ -172,18 +194,23 @@ class Server:
 				ann_list = [(k, v) for k, v in self.ltp_list.items()]
 
 			# update and shuffle announcement list
+			self.eph_key = randkey()
 			ann_list = self.announcement_fwd(ann_list)
 			ann_list = self.verifiable_shuffle(ann_list)
 
+			# update global generator
+			generator = powm(generator, self.eph_key)
+
 			# pass announcement list to next server
-			send(self.next_addr, [Constants.NEW_ANNOUNCEMENT, ann_list, init_id])
+			send(self.next_addr, [Constants.NEW_ANNOUNCEMENT, ann_list, generator, init_id])
 		else:
 			# initialize add announcement
-			ann_args = [ann_list, Constants.INIT_ID]
-			self.replace_stp(Constants.REPLACE_STP, ann_args)
+			ann_args = [ann_list, generator, Constants.INIT_ID]
+			self.replace_stp(ann_args)
 
 	def replace_stp(self, msg_args):
-		ann_list, init_id = msg_args
+		ann_list, generator, init_id = msg_args
+		self.generator = generator
 
 		# tell coordinator that announcement phase is finished
 		if init_id == self.server_id:
@@ -196,8 +223,8 @@ class Server:
 		# add announcement list to current server and update next server
 		self.sprint("Announcement phase finished. Updated short-term pseudonyms.")
 		self.stp_list = {k: v for (k, v) in ann_list}
-		print(self.stp_list)
-		send(self.next_addr, [Constants.REPLACE_STP, ann_list, init_id])
+		print('stp list: ' + str(self.stp_list))
+		send(self.next_addr, [Constants.REPLACE_STP, ann_list, generator, init_id])
 
 	def new_message(self, msg_args):
 		client_msg, client_stp, client_sig = msg_args
@@ -215,7 +242,7 @@ class Server:
 
 	# [NOTE] must initiate rev announcement on prev of leader
 	def rev_announcement(self, msg_args):
-		ann_list, init_id = msg_args
+		ann_list, server_pub_keys, init_id = msg_args
 
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
@@ -223,18 +250,19 @@ class Server:
 				ann_list = [(k, v) for k, v in self.stp_list.items()]
 
 			# update and shuffle announcement list
-			ann_list = self.announcement_bwd(ann_list)
+			ann_list = self.announcement_bwd(ann_list, server_pub_keys)
 			ann_list = self.verifiable_shuffle(ann_list)
 
 			# pass announcement list to next server
-			send(self.prev_addr, [Constants.REV_ANNOUNCEMENT, ann_list, init_id])
+			send(self.prev_addr, [Constants.REV_ANNOUNCEMENT, ann_list, server_pub_keys, init_id])
 		else:
 			# initialize add announcement
 			ann_args = [ann_list, Constants.INIT_ID]
-			self.replace_ltp(Constants.REPLACE_LTP, ann_args)
+			self.replace_ltp(ann_args)
 
 	def replace_ltp(self, msg_args):
 		ann_list, init_id = msg_args
+		self.generator = None
 
 		# tell coordinator that it's time to start a new round
 		if init_id == self.server_id:
@@ -246,6 +274,7 @@ class Server:
 
 		# add announcement list to current server and update next server
 		self.ltp_list = {k: v for (k, v) in ann_list}
+		print('ltp list: ' + str(self.ltp_list))
 		send(self.next_addr, [Constants.REPLACE_LTP, ann_list, init_id])
 
 	def update_id(self, msg_args):
@@ -270,7 +299,7 @@ class Server:
 
 				# verify message information
 				if not self.verify_message(msg):
-					self.eprint('Error processing ' + msg + '.')
+					self.eprint('Error processing ' + str(msg) + '.')
 					continue
 
 				msg_head, *msg_args = msg
