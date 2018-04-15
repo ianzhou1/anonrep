@@ -3,7 +3,8 @@ import re
 import sys
 
 import config
-from util import Constants, send, sendrecv, powm, modinv, sighash, randkey, randkeyRP
+from util import Constants, send, sendrecv, powm, modinv, hash_sha1, randkey, randkeyRP, gcd
+from linkable_ring_signature import ring_signature
 
 # client class
 class Client:
@@ -21,10 +22,13 @@ class Client:
 
 	def sign(self, msg):
 		# ElGamal signature
-		k = randkeyRP(1, Constants.MOD - 2)
-		r = powm(self.generator, k, Constants.MOD - 1)
-		s = (sighash(msg) - self.pri_key * r) * modinv(k, Constants.MOD - 1)
-		s %= (Constants.MOD - 1)
+		r, s = 0, 0
+
+		while s == 0:
+			k = randkeyRP(1, Constants.MOD - 2)
+			r = powm(self.generator, k)
+			s = (hash_sha1(msg) - self.pri_key * r) * modinv(k, Constants.MOD - 1)
+			s %= Constants.MOD - 1
 
 		return (r, s)
 
@@ -42,7 +46,9 @@ class Client:
 
 	def vote(self, amount, msg_id):
 		# TODO: verify server-side that amount is either +1 or -1
-		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, amount, c.sign('{};{}'.format(msg_id, amount))])
+		sig = c.sign('{};{}'.format(msg_id, amount))
+		
+		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, amount, sig])
 
 	def show_help(self):
 		print('Instructions:')

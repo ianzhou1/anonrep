@@ -3,8 +3,8 @@ import sys
 import traceback
 
 import config
-from util import Constants, send, recv, powm, modinv, sighash, randkey
-from Crypto.PublicKey import ElGamal
+from util import Constants, send, recv, powm, modinv, hash_sha1, randkey
+from linkable_ring_signature import verify_ring_signature
 
 # server class
 class Server:
@@ -45,6 +45,7 @@ class Server:
 				Constants.UPDATE_ID: self.update_id,
 				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
 				Constants.GET_GENERATOR: self.get_generator,
+				Constants.GET_STP: self.get_stp,
 		}
 
 		# message type dict for received messages
@@ -61,6 +62,7 @@ class Server:
 				Constants.UPDATE_ID: [int],
 				Constants.UPDATE_NEIGHBORS: [list, list],
 				Constants.GET_GENERATOR: [],
+				Constants.GET_STP: [],
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
@@ -153,7 +155,10 @@ class Server:
 
 	def verify_signature(self, msg, stp, sig):
 		r, s = sig
-		return powm(self.generator, sighash(msg), Constants.MOD - 1) == (powm(stp, r, Constants.MOD - 1) * powm(r, s, Constants.MOD - 1)) % (Constants.MOD - 1)
+		u = powm(self.generator, hash_sha1(msg))
+		v = (powm(stp, r) * powm(r, s)) % Constants.MOD
+		print(u, v)
+		return u == v
 
 	def new_client(self, msg_args):
 		client_ltp = msg_args[0]
@@ -241,15 +246,29 @@ class Server:
 
 		# verify message, pseudonym, and signature
 		if not self.verify_signature(client_msg, client_stp, client_sig):
-			self.sprint('Signature verification failed.')
+			self.sprint('Message signature verification failed.')
 			return
 
 		client_rep = self.stp_list[client_stp]
 		client_score = client_rep[1]
 		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, client_score])
 
+	def get_stp(self, s, msg_args):
+		# send short term pseudonym list
+		send(s, self.stp_list)
+
 	def new_feedback(self, msg_args):
 		client_msg_id, client_vote, client_sig = msg_args
+
+		# verify vote
+		if client_vote not in [-1, 1]:
+			self.sprint('Invalid vote received.')
+			return
+
+		# verify linkable ring signature
+		# if not verify_ring_signature():
+		# 	self.sprint('Feedback linkable ring signature verification failed.')
+		# 	return
 
 		# [TODO] verify vote and linkable ring signature
 		send(config.COORDINATOR_ADDR, [Constants.POST_FEEDBACK, client_msg_id, client_vote])

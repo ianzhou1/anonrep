@@ -41,6 +41,7 @@ class Constants:
 	UPDATE_ID = 'UPDATE_ID'
 	UPDATE_NEIGHBORS = 'UPDATE_NEIGHBORS'
 	GET_GENERATOR = 'GET_GENERATOR'
+	GET_STP = 'GET_STP'
 
 	# message board headers
 	POST_MESSAGE = 'POST_MESSAGE'
@@ -109,10 +110,15 @@ def modinv(num, mod=Constants.MOD):
 	g, inv, _ = egcd(num, mod)
 	return (inv % mod) if g == 1 else None
 
-# message hash function
-def sighash(msg, mod=Constants.MOD):
+# message hash sha1 function
+def hash_sha1(msg, mod=Constants.MOD):
 	msg = msg.encode(Constants.ENCODING)
-	return int(hashlib.sha1(msg).hexdigest(), 16) % Constants.MOD
+	return int(hashlib.sha1(msg).hexdigest(), 16) % mod
+
+# message hash blake2s function
+def hash_blake2s(msg, mod=Constants.MOD):
+	msg = msg.encode(Constants.ENCODING)
+	return int(hashlib.blake2s(msg).hexdigest(), 16) % mod
 
 # random key
 def randkey(start=0, end=Constants.MOD - 1):
