@@ -144,15 +144,18 @@ class Coordinator:
 				msg_head, *msg_args = msg
 
 				# respond to received message
-				self.respond[msg_head](msg_args)
-
-				s.close()
+				if msg_head in Constants.OPEN_SOCKET:
+					self.respond[msg_head](s, msg_args)
+				else:
+					self.respond[msg_head](msg_args)
 			except ConnectionAbortedError:
 				print()
 				self.ss.close()
 				break
 			except Exception:
 				traceback.print_exc()
+			finally:
+				s.close()
 		self.ss.close()
 
 if __name__ == '__main__':
