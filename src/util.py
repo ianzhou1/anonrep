@@ -24,9 +24,14 @@ class Constants:
 	MESSAGE_PHASE = 'MESSAGE_PHASE'
 	FEEDBACK_PHASE = 'FEEDBACK_PHASE'
 
+	VOTE_CALCULATION_PHASE = 'VOTE_CALCULATION_PHASE'
+
 	# coordinator server headers
 	NEW_SERVER = 'NEW_SERVER'
 	END_ANNOUNCEMENT_PHASE = 'END_ANNOUNCEMENT_PHASE'
+
+	# blockchain coordinator server headers
+	GET_CONTRACT_ADDRESS = 'GET_CONTRACT_ADDRESS'
 
 	# server message headers
 	NEW_CLIENT = 'NEW_CLIENT'
@@ -50,7 +55,7 @@ class Constants:
 	END_MESSAGE_PHASE = 'END_MESSAGE_PHASE'
 
 	# headers requiring open socket
-	OPEN_SOCKET = set([GET_GENERATOR, GET_STP_ARRAY, DISP_BOARD])
+	OPEN_SOCKET = set([GET_GENERATOR, GET_STP_ARRAY, DISP_BOARD, GET_CONTRACT_ADDRESS])
 
 	# message board keys
 	MSG = 'msg' # message

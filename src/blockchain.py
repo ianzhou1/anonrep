@@ -56,16 +56,22 @@ class LocalBlockchain:
 			address=contract_address,
 			ContractFactoryClass=ConciseContract)
 
-	def get_balance(self, account):
+	def get_balance(self, address):
 		if self.contract_instance is None:
 			print('Error: Call deploy_contract or connect_to_contract first.')
-		return self.contract_instance.getBalance(account.address)
+		return self.contract_instance.getBalance(address)
 
 	def add_reputation(self, addr, rep):
+		if self.contract_instance is None:
+			print('Error: Call deploy_contract or connect_to_contract first.')
 		self.contract_instance.addReputation(addr, rep, transact=self.transaction)
 
 	def remove_reputation(self, addr, rep):
+		if self.contract_instance is None:
+			print('Error: Call deploy_contract or connect_to_contract first.')
 		self.contract_instance.removeReputation(addr, rep, transact=self.transaction)
 
 	def transfer(self, sender, receiver):
+		if self.contract_instance is None:
+			print('Error: Call deploy_contract or connect_to_contract first.')
 		self.contract_instance.transfer(sender, receiver, transact=self.transaction)
