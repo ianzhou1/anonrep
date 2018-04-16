@@ -71,20 +71,20 @@ if __name__ == '__main__':
 
 	while True:
 		try:
-			s = input('> ').upper()
-			if s == 'HELP':
+			s = input('> ').strip().upper()
+			if s == '^HELP$':
 				c.show_help()
-			elif s == 'SHOW':
+			elif s == '^SHOW$':
 				messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
 				pprint.PrettyPrinter(indent=4).pprint(messages)
-			elif re.match("WRITE", s) is not None:
+			elif re.match("^WRITE$", s) is not None:
 				msg = input('Write message here: ')
 				c.post(msg)
 				pass
-			elif re.match("VOTE UP \d+", s) is not None and len(s.split()) == 3:
+			elif re.match("^VOTE UP \d+$", s) is not None and len(s.split()) == 3:
 				c.vote(1, int(s.split()[-1]))
 				pass
-			elif re.match("VOTE DOWN \d+", s) is not None and len(s.split()) == 3:
+			elif re.match("^VOTE DOWN \d+$", s) is not None and len(s.split()) == 3:
 				c.vote(-1, int(s.split()[-1]))
 				pass
 			else:
