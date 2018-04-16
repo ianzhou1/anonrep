@@ -78,12 +78,12 @@ class MessageBoard:
 			return
 
 		# post feedback to board
-		client_fb = self.board[client_msg_id][Constants.FB]
+		client_fb = self.board[client_msg_id][1][Constants.FB]
 		if client_vote >= 0:
 			client_fb = (client_fb[0] + client_vote, client_fb[1])
 		else:
 			client_fb = (client_fb[0], client_fb[1] + client_vote)
-		self.board[client_msg_id][Constants.FB] = client_fb
+		self.board[client_msg_id][1][Constants.FB] = client_fb
 
 	def disp_board(self, s, msg_args):
 		# send message board
