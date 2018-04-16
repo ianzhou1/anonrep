@@ -35,7 +35,7 @@ class Client:
 	def get_stp(self):
 		return powm(self.generator, self.pri_key)
 
-	def post(self, msg, rep):
+	def post(self, msg):
 		self.generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
 
 		stp = self.get_stp()
@@ -47,7 +47,7 @@ class Client:
 	def vote(self, amount, msg_id):
 		# TODO: verify server-side that amount is either +1 or -1
 		sig = c.sign('{};{}'.format(msg_id, amount))
-		
+
 		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, amount, sig])
 
 	def show_help(self):
@@ -55,7 +55,7 @@ class Client:
 		print('--------------------------------------------------------')
 		print('HELP           : Displays this help message')
 		print('SHOW           : Shows message')
-		print('WRITE [rep]    : Write a message with reputation [rep]')
+		print('WRITE          : Write a message')
 		print('VOTE UP [num]  : Votes up the message with ID [num]')
 		print('VOTE DOWN [num]: Votes down the message with ID [num]')
 		print('--------------------------------------------------------')
@@ -78,11 +78,9 @@ if __name__ == '__main__':
 			elif s == 'SHOW':
 				messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
 				pprint.PrettyPrinter(indent=4).pprint(messages)
-			elif re.match("WRITE \d+", s) is not None:
+			elif re.match("WRITE", s) is not None:
 				msg = input('Write message here: ')
-				# TODO: Compute nym
-				# TODO: encrypt msg with private key
-				c.post(msg, int(s.split()[-1]))
+				c.post(msg)
 				pass
 			elif re.match("VOTE UP \d+", s) is not None:
 				c.vote(1, int(s.split()[-1]))
