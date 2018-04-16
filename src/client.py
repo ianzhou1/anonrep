@@ -41,7 +41,6 @@ class Client:
 		stp = self.get_stp()
 		sig = c.sign(msg)
 
-		# TODO: Find wallets that suffice, use them.
 		send(self.server_addr, [Constants.NEW_MESSAGE, msg, stp, sig])
 
 	def vote(self, amount, msg_id):
