@@ -120,6 +120,8 @@ def verify_ring_signature(message, y, c_0, s, Y, G=SECP256k1.generator, hash_fun
         if i < n - 1:
             c[i + 1] = H1([y, Y, message, z_1, z_2], hash_func=hash_func)
         else:
+            print(c_0)
+            print(H1([y, Y, message, z_1, z_2], hash_func=hash_func))
             return c_0 == H1([y, Y, message, z_1, z_2], hash_func=hash_func)
 
     return False

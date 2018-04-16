@@ -8,7 +8,7 @@ class MessageBoard:
 		self.coordinator = coordinator
 
 		# core variables
-		self.board = {} # message id and (message, pseudonym, reputation score)
+		self.board = [] # list of (message, pseudonym, reputation score)
 		self.msg_id = 0
 
 		# respond dict for received messages
@@ -26,6 +26,12 @@ class MessageBoard:
 				Constants.DISP_BOARD: [],
 				Constants.END_MESSAGE_PHASE: [],
 		}
+
+	def sprint(self, s):
+		print('[BOARD] ' + s)
+
+	def eprint(self, err):
+		print('[BOARD] ' + err, file=sys.stderr)
 
 	def verify_message(self, msg, phase):
 		if len(msg) == 0:
@@ -54,17 +60,23 @@ class MessageBoard:
 		client_msg, client_stp, client_score = msg_args
 
 		# post message to board and increment message id
-		self.board[self.msg_id] = {
+		self.board.append([self.msg_id, {
 				Constants.MSG: client_msg,
 				Constants.NYM: client_stp,
 				Constants.REP: client_score,
 				Constants.FB: Constants.INIT_FEEDBACK
-		}
+		}])
+
 		self.msg_id += 1
 
 	def post_feedback(self, msg_args):
 		client_msg_id, client_vote = msg_args
-		# [TODO] verify client message id
+
+		# verify client message id
+		if client_msg_id < 0 or client_msg_id >= len(self.board):
+			self.eprint('Invalid message id.')
+			return
+
 		# post feedback to board
 		client_fb = self.board[client_msg_id][Constants.FB]
 		if client_vote >= 0:
@@ -96,6 +108,3 @@ class MessageBoard:
 		else:
 			self.respond[msg_head](msg_args)
 		s.close()
-
-	def eprint(self, err):
-		print('[BOARD] ' + err, file=sys.stderr)

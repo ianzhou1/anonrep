@@ -43,11 +43,11 @@ class Coordinator:
 
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
 
-	def eprint(self, err):
-		print('[COORDINATOR] ' + err, file=sys.stderr)
-
 	def sprint(self, s):
 		print('[COORDINATOR] ' + s)
+
+	def eprint(self, err):
+		print('[COORDINATOR] ' + err, file=sys.stderr)
 
 	def verify_message(self, msg):
 		if len(msg) == 0:

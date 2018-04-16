@@ -3,8 +3,8 @@ import sys
 import traceback
 
 import config
-from util import Constants, send, recv, powm, modinv, hash_sha1, randkey
-from linkable_ring_signature import verify_ring_signature
+from util import Constants, send, recv, powm, modinv, msg_hash, randkey
+from hashlib import sha1
 
 # server class
 class Server:
@@ -20,6 +20,7 @@ class Server:
 		self.pub_key = powm(Constants.G, self.pri_key)
 		self.ltp_list = {} # long-term pseudonyms and encrypted reputation scores
 		self.stp_list = {} # short-term pseudonyms and decrypted reputation scores
+		self.stp_array = [] # short-term pseudonym array
 		self.generator = None # round-based global generator
 		self.nym_list = {} # pseudonym list used for decryption
 
@@ -45,7 +46,7 @@ class Server:
 				Constants.UPDATE_ID: self.update_id,
 				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
 				Constants.GET_GENERATOR: self.get_generator,
-				Constants.GET_STP: self.get_stp,
+				Constants.GET_STP_ARRAY: self.get_stp_array,
 		}
 
 		# message type dict for received messages
@@ -56,13 +57,13 @@ class Server:
 				Constants.NEW_ANNOUNCEMENT: [list, int, int],
 				Constants.REPLACE_STP: [list, int, int],
 				Constants.NEW_MESSAGE: [str, int, list],
-				Constants.NEW_FEEDBACK: [int, int, list],
+				Constants.NEW_FEEDBACK: [int, str, int, list],
 				Constants.REV_ANNOUNCEMENT: [list, list, int],
 				Constants.REPLACE_LTP: [list, int],
 				Constants.UPDATE_ID: [int],
 				Constants.UPDATE_NEIGHBORS: [list, list],
 				Constants.GET_GENERATOR: [],
-				Constants.GET_STP: [],
+				Constants.GET_STP_ARRAY: [],
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
@@ -78,12 +79,6 @@ class Server:
 
 	def set_next_server(self, next_addr):
 		self.next_addr = next_addr
-
-	def encryptPowm(self, nym):
-		return powm(nym, self.eph_key)
-
-	def decryptPowm(self, nym):
-		return self.nym_list[nym]
 
 	def encryptElGamal(self, rep, server_pub_keys):
 		# ElGamal encryption
@@ -112,7 +107,7 @@ class Server:
 		# forward encrypt (nym) and decrypt (rep)
 		new_ann_list = []
 		for nym, rep in ann_list:
-			new_nym = self.encryptPowm(nym)
+			new_nym = powm(nym, self.eph_key)
 			new_rep = self.decryptElGamal(rep)
 			self.nym_list[new_nym] = nym
 			new_ann_list.append((new_nym, new_rep))
@@ -123,7 +118,7 @@ class Server:
 		# backward decrypt (nym) and encrypt (rep)
 		new_ann_list = []
 		for nym, rep in ann_list:
-			new_nym = self.decryptPowm(nym)
+			new_nym = self.nym_list[nym]
 			new_rep = self.encryptElGamal(rep, server_pub_keys)
 			new_ann_list.append((new_nym, new_rep))
 
@@ -155,9 +150,8 @@ class Server:
 
 	def verify_signature(self, msg, stp, sig):
 		r, s = sig
-		u = powm(self.generator, hash_sha1(msg))
+		u = powm(self.generator, msg_hash(msg, sha1))
 		v = (powm(stp, r) * powm(r, s)) % Constants.MOD
-		print(u, v)
 		return u == v
 
 	def new_client(self, msg_args):
@@ -234,6 +228,7 @@ class Server:
 		# add announcement list to current server and update next server
 		self.sprint('Announcement phase finished. Updated short-term pseudonyms.')
 		self.stp_list = {k: v for (k, v) in ann_list}
+		self.stp_array = [k for (k, v) in ann_list]
 		print('stp list: ' + str(self.stp_list))
 		send(self.next_addr, [Constants.REPLACE_STP, ann_list, generator, init_id])
 
@@ -246,31 +241,37 @@ class Server:
 
 		# verify message, pseudonym, and signature
 		if not self.verify_signature(client_msg, client_stp, client_sig):
-			self.sprint('Message signature verification failed.')
+			self.eprint('Message signature verification failed.')
 			return
 
 		client_rep = self.stp_list[client_stp]
 		client_score = client_rep[1]
 		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, client_score])
 
-	def get_stp(self, s, msg_args):
+	def get_stp_array(self, s, msg_args):
 		# send short term pseudonym list
-		send(s, self.stp_list)
+		send(s, self.stp_array)
 
 	def new_feedback(self, msg_args):
-		client_msg_id, client_vote, client_sig = msg_args
+		client_msg_id, client_msg, client_vote, client_sig = msg_args
 
 		# verify vote
 		if client_vote not in [-1, 1]:
-			self.sprint('Invalid vote received.')
+			self.eprint('Invalid vote received.')
 			return
 
-		# verify linkable ring signature
-		# if not verify_ring_signature():
-		# 	self.sprint('Feedback linkable ring signature verification failed.')
+		# # modify stp_array to prevent duplicate voting
+		# c = hash_blake2s(client_msg)
+		# y = [nym + c for nym in self.stp_array]
+		# c_0, s, Y_x, Y_y = client_sig
+		# Y = Point(curve_secp256k1, Y_x, Y_y)
+
+		# # verify linkable ring signature
+		# if not verify_ring_signature(client_msg, y, c_0, s, Y):
+		# 	self.eprint('Feedback linkable ring signature verification failed.')
 		# 	return
 
-		# [TODO] verify vote and linkable ring signature
+		# [TODO] verify linkable ring signature
 		send(config.COORDINATOR_ADDR, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
 
 	# [NOTE] must initiate rev announcement on prev of leader

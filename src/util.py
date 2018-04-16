@@ -15,8 +15,8 @@ class Constants:
 	INIT_FEEDBACK = [0, 0] # initial feedback
 	INIT_ID = -1 # id indicating initial phase
 
-	MESSAGE_PHASE_LENGTH_IN_SECS = 10
-	FEEDBACK_PHASE_LENGTH_IN_SECS = 10
+	MESSAGE_PHASE_LENGTH_IN_SECS = 6
+	FEEDBACK_PHASE_LENGTH_IN_SECS = 6
 
 	# coordinator phases
 	REGISTRATION_PHASE = 'REGISTRATION_PHASE'
@@ -41,7 +41,7 @@ class Constants:
 	UPDATE_ID = 'UPDATE_ID'
 	UPDATE_NEIGHBORS = 'UPDATE_NEIGHBORS'
 	GET_GENERATOR = 'GET_GENERATOR'
-	GET_STP = 'GET_STP'
+	GET_STP_ARRAY = 'GET_STP_ARRAY'
 
 	# message board headers
 	POST_MESSAGE = 'POST_MESSAGE'
@@ -50,7 +50,7 @@ class Constants:
 	END_MESSAGE_PHASE = 'END_MESSAGE_PHASE'
 
 	# headers requiring open socket
-	OPEN_SOCKET = set([GET_GENERATOR, DISP_BOARD])
+	OPEN_SOCKET = set([GET_GENERATOR, GET_STP_ARRAY, DISP_BOARD])
 
 	# message board keys
 	MSG = 'msg' # message
@@ -110,15 +110,10 @@ def modinv(num, mod=Constants.MOD):
 	g, inv, _ = egcd(num, mod)
 	return (inv % mod) if g == 1 else None
 
-# message hash sha1 function
-def hash_sha1(msg, mod=Constants.MOD):
+# message hash function
+def msg_hash(msg, hash_func, mod=Constants.MOD):
 	msg = msg.encode(Constants.ENCODING)
-	return int(hashlib.sha1(msg).hexdigest(), 16) % mod
-
-# message hash blake2s function
-def hash_blake2s(msg, mod=Constants.MOD):
-	msg = msg.encode(Constants.ENCODING)
-	return int(hashlib.blake2s(msg).hexdigest(), 16) % mod
+	return int(hash_func(msg).hexdigest(), 16) % mod
 
 # random key
 def randkey(start=0, end=Constants.MOD - 1):
