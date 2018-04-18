@@ -42,7 +42,7 @@ class Client:
 		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
 
 		stp = powm(generator, self.pri_key)
-		sig = c.sign(msg, generator)
+		sig = self.sign(msg, generator)
 
 		send(self.server_addr, [Constants.NEW_MESSAGE, msg, stp, sig])
 
@@ -78,7 +78,7 @@ class Client:
 
 		# sig = (c_0, s, Y.x(), Y.y())
 		sig = []
-		
+
 		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
 
 	def show_help(self):
