@@ -193,19 +193,6 @@ class BlockchainClient(Client):
 		# TODO: Make sure client can't use a wallet more than once. (check this coordinator-side too)
 		send(self.server_addr, [Constants.NEW_MESSAGE, msg, stp, sig, addresses, signatures, self.addr])
 
-	def vote(self, amount, msg_id):
-		messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
-
-		# verify message id
-		if msg_id < 0 or msg_id >= len(messages):
-			self.eprint('Invalid message id.')
-			return
-
-		msg = messages[msg_id][1][Constants.MSG]
-		sig = []
-
-		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
-
 	def show_help(self):
 		print('Instructions:')
 		print('--------------------------------------------------------')
