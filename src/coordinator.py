@@ -92,12 +92,14 @@ class Coordinator:
 
 	def begin_client_registration(self):
 		self.sprint('Beginning client registration...')
+		self.phase = Constants.REGISTRATION_PHASE
 
 		# update servers and neighbors
 		self.broadcast_neighbors()
 
 	def begin_announcement_phase(self):
 		self.sprint('Beginning announcement phase...')
+		self.phase = Constants.ANNOUNCEMENT_PHASE
 
 		# shuffle list of servers
 		random.shuffle(self.servers)
@@ -174,7 +176,6 @@ if __name__ == '__main__':
 
 		print('*** Press [ENTER] to begin announcement phase. ***')
 		input()
-		c.phase = Constants.ANNOUNCEMENT_PHASE
 
 		while True:
 			c.begin_announcement_phase()

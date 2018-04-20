@@ -10,13 +10,13 @@ def test_blockchain():
 
 	account1 = bc.generate_keypair()
 
-	assert coordinator.get_balance(account1) == 0
+	assert coordinator.get_balance(account1.address) == 0
 
 	coordinator.add_reputation(account1.address, 70)
-	assert client.get_balance(account1) == 70
+	assert client.get_balance(account1.address) == 70
 
 	coordinator.remove_reputation(account1.address, 68)
-	assert client.get_balance(account1) == 2
+	assert client.get_balance(account1.address) == 2
 
 	# reputation cannot go negative
 	with pytest.raises(ValueError):

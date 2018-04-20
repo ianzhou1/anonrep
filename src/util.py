@@ -6,14 +6,17 @@ from functools import singledispatch
 
 # constants class
 class Constants:
-	MOD = 65537 # prime modulo
-	G = 1848 # primitive root of MOD
-	INTEGER_SIZE = 8 # number of bytes that will be used to denote the size of payload
-	BUFFER_SIZE = 4096 # socket buffer receive buffer size
-	ENCODING = 'UTF-8' # socket encoding
-	INIT_REPUTATION = [1, 1] # initial reputation (secret, text)
-	INIT_FEEDBACK = [0, 0] # initial feedback
-	INIT_ID = -1 # id indicating initial phase
+	MOD = 65537  # prime modulo
+	G = 1848  # primitive root of MOD
+	INTEGER_SIZE = 8  # number of bytes that will be used to denote the size of payload
+	BUFFER_SIZE = 4096  # socket buffer receive buffer size
+	ENCODING = 'UTF-8'  # socket encoding
+	INIT_REPUTATION = [1, 1]  # initial reputation (secret, text)
+	INIT_FEEDBACK = [0, 0]  # initial feedback
+	INIT_ID = -1  # id indicating initial phase
+
+	AES_KEY_LENGTH = 16  # length of AES key for CoinShuffle
+	RSA_KEY_LENGTH = 2048  # length of RSA key for CoinShuffle
 
 	MESSAGE_PHASE_LENGTH_IN_SECS = 6
 	FEEDBACK_PHASE_LENGTH_IN_SECS = 6
@@ -24,6 +27,9 @@ class Constants:
 	MESSAGE_PHASE = 'MESSAGE_PHASE'
 	FEEDBACK_PHASE = 'FEEDBACK_PHASE'
 
+	# coordinator blockchain phases
+	COINSHUFFLE_PHASE = 'COINSHUFFLE_PHASE'
+	COINSHUFFLE_FINISHED_PHASE = 'COINSHUFFLE_FINISHED_PHASE'
 	VOTE_CALCULATION_PHASE = 'VOTE_CALCULATION_PHASE'
 
 	# coordinator server headers
@@ -32,6 +38,11 @@ class Constants:
 
 	# blockchain coordinator server headers
 	GET_CONTRACT_ADDRESS = 'GET_CONTRACT_ADDRESS'
+
+	# coinshuffle coordinator message headers
+	PARTICIPATION_STATUS = 'PARTICIPATION_STATUS'
+	KEYS = 'KEYS'
+	SHUFFLE = 'SHUFFLE'
 
 	# server message headers
 	NEW_CLIENT = 'NEW_CLIENT'
@@ -55,7 +66,12 @@ class Constants:
 	END_MESSAGE_PHASE = 'END_MESSAGE_PHASE'
 
 	# headers requiring open socket
-	OPEN_SOCKET = set([GET_GENERATOR, GET_STP_ARRAY, DISP_BOARD, GET_CONTRACT_ADDRESS])
+	OPEN_SOCKET = set([GET_GENERATOR,
+		               GET_STP_ARRAY,
+		               DISP_BOARD,
+		               GET_CONTRACT_ADDRESS,
+		               PARTICIPATION_STATUS,
+		               KEYS])
 
 	# message board keys
 	MSG = 'msg' # message
@@ -75,6 +91,11 @@ def _(addr, args):
 	s.connect(addr)
 	send(s, args)
 
+def sendbytes(addr, payload):
+	s = socket.socket()
+	s.connect(addr)
+	s.send(len(payload).to_bytes(Constants.INTEGER_SIZE, byteorder='big') + payload)
+
 # receive arguments through socket
 def recv(s):
 	remaining = int.from_bytes(s.recv(Constants.INTEGER_SIZE), byteorder='big')
@@ -84,6 +105,15 @@ def recv(s):
 		remaining -= len(chunk)
 		chunks.append(chunk)
 	return json.loads(b''.join(chunks).decode(Constants.ENCODING))
+
+def recvbytes(s):
+	remaining = int.from_bytes(s.recv(Constants.INTEGER_SIZE), byteorder='big')
+	chunks = []
+	while remaining > 0:
+		chunk = s.recv(min(Constants.BUFFER_SIZE, remaining))
+		remaining -= len(chunk)
+		chunks.append(chunk)
+	return b''.join(chunks)
 
 # send and receive arguments through socket
 def sendrecv(addr, args):
