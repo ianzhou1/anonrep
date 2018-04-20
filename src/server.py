@@ -4,6 +4,7 @@ import traceback
 
 import config
 from util import Constants, send, recv, powm, modinv, msg_hash, randkey
+from lrs import verify_lrs, concat
 from hashlib import sha1
 
 # server class
@@ -23,6 +24,7 @@ class Server:
 		self.stp_array = [] # short-term pseudonym array
 		self.generator = None # round-based global generator
 		self.nym_list = {} # pseudonym list used for decryption
+		self.lrs_duplicates = set() # duplicate feedback set
 
 		# socket variables
 		self.addr = (host, port)
@@ -84,12 +86,12 @@ class Server:
 		# ElGamal encryption
 		key = randkey()
 		secret_c, text = rep
-		secret_c = (secret_c * powm(Constants.G, key)) % Constants.MOD
+		secret_c = (secret_c * powm(Constants.G, key)) % Constants.P
 
 		secret = powm(secret_c, self.pri_key)
-		text = (text * secret) % Constants.MOD
+		text = (text * secret) % Constants.P
 		for server_pub_key in server_pub_keys:
-			text = (text * powm(server_pub_key, key)) % Constants.MOD
+			text = (text * powm(server_pub_key, key)) % Constants.P
 		server_pub_keys.append(self.pub_key)
 
 		return (secret_c, text)
@@ -99,7 +101,7 @@ class Server:
 		secret_c, text = rep
 
 		secret = powm(secret_c, self.pri_key)
-		text = (text * modinv(secret)) % Constants.MOD
+		text = (text * modinv(secret)) % Constants.P
 
 		return (secret_c, text)
 
@@ -151,7 +153,7 @@ class Server:
 	def verify_signature(self, msg, stp, sig):
 		r, s = sig
 		u = powm(self.generator, msg_hash(msg, sha1))
-		v = (powm(stp, r) * powm(r, s)) % Constants.MOD
+		v = (powm(stp, r) * powm(r, s)) % Constants.P
 		return u == v
 
 	def new_client(self, msg_args):
@@ -169,7 +171,7 @@ class Server:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
 
-			self.sprint('New client with long-term pseudonym: {}'.format(client_ltp))
+			self.sprint('New client with long-term pseudonym: {}'.format(client_ltp % Constants.MOD))
 
 			# encrypt client reputation
 			client_rep = self.encryptElGamal(client_rep, server_pub_keys)
@@ -225,11 +227,18 @@ class Server:
 		if init_id == Constants.INIT_ID:
 			init_id = self.server_id
 
-		# add announcement list to current server and update next server
+		# add announcement list to current server
 		self.sprint('Announcement phase finished. Updated short-term pseudonyms.')
 		self.stp_list = {k: v for (k, v) in ann_list}
 		self.stp_array = [k for (k, v) in ann_list]
-		print('stp list: ' + str(self.stp_list))
+
+		# modify for printing purposes
+		stp_list = {}
+		for k, v in ann_list:
+			stp_list[k % Constants.MOD] = [v[0] % Constants.MOD, v[1]]
+		print('stp list: ' + str(stp_list))
+		
+		# update next server
 		send(self.next_addr, [Constants.REPLACE_STP, ann_list, generator, init_id])
 
 	def get_generator(self, s, msg_args):
@@ -254,24 +263,28 @@ class Server:
 
 	def new_feedback(self, msg_args):
 		client_msg_id, client_msg, client_vote, client_sig = msg_args
+		client_tag = client_sig[2]
 
 		# verify vote
 		if client_vote not in [-1, 1]:
 			self.eprint('Invalid vote received.')
 			return
 
-		# # modify stp_array to prevent duplicate voting
-		# c = hash_blake2s(client_msg)
-		# y = [nym + c for nym in self.stp_array]
-		# c_0, s, Y_x, Y_y = client_sig
-		# Y = Point(curve_secp256k1, Y_x, Y_y)
+		# modify copy of stp_array to prevent duplicate voting
+		stp_array = list(self.stp_array)
+		stp_array.append(msg_hash(client_msg, sha1))
 
-		# # verify linkable ring signature
-		# if not verify_ring_signature(client_msg, y, c_0, s, Y):
-		# 	self.eprint('Feedback linkable ring signature verification failed.')
-		# 	return
+		# verify not a duplicate
+		if client_tag in self.lrs_duplicates:
+			self.eprint('Feedback linkable ring signature duplicate detected.')
+			return
 
-		# [TODO] verify linkable ring signature
+		# verify linkable ring signature
+		if not verify_lrs(client_msg, stp_array, *client_sig, g=self.generator):
+			self.eprint('Feedback linkable ring signature verification failed.')
+			return
+
+		self.lrs_duplicates.add(client_tag)
 		send(config.COORDINATOR_ADDR, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
 
 	# [NOTE] must initiate rev announcement on prev of leader
@@ -297,6 +310,7 @@ class Server:
 	def replace_ltp(self, msg_args):
 		ann_list, init_id = msg_args
 		self.generator = None
+		self.lrs_duplicates.clear()
 
 		# tell coordinator that it's time to start a new round
 		if init_id == self.server_id:

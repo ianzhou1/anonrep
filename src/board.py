@@ -96,7 +96,7 @@ class MessageBoard:
 	def process_message(self, s, msg, phase):
 		# verify message information
 		if not self.verify_message(msg, phase):
-			self.eprint('Error processing message.')
+			self.eprint('Error processing ' + str(msg) + '.')
 			s.close()
 			return
 

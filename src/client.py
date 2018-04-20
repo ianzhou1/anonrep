@@ -4,8 +4,8 @@ import sys
 
 import config
 from util import Constants, send, sendrecv, powm, modinv, msg_hash, randkey, randkeyRP
+from lrs import sign_lrs
 from hashlib import sha1
-from lrs import sign_lrs, verify_lrs
 
 # client class
 class Client:
@@ -31,10 +31,10 @@ class Client:
 		r, s = 0, 0
 
 		while s == 0:
-			k = randkeyRP(1, Constants.MOD - 2)
+			k = randkeyRP(1, Constants.P - 2)
 			r = powm(generator, k)
-			s = (msg_hash(msg, sha1) - self.pri_key * r) * modinv(k, Constants.MOD - 1)
-			s %= Constants.MOD - 1
+			s = (msg_hash(msg, sha1) - self.pri_key * r) * modinv(k, Constants.P - 1)
+			s %= Constants.P - 1
 
 		return (r, s)
 
@@ -54,32 +54,26 @@ class Client:
 			self.eprint('Invalid message id.')
 			return
 
-		# msg = messages[msg_id][1][Constants.MSG]
-		# generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
-		# stp_array = sendrecv(self.server_addr, [Constants.GET_STP_ARRAY])
-		# stp = powm(generator, self.pri_key)
-		# stp_idx = stp_array.index(stp)
+		msg = messages[msg_id][1][Constants.MSG]
+		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
+		stp_array = sendrecv(self.server_addr, [Constants.GET_STP_ARRAY])
+		stp = powm(generator, self.pri_key)
+		stp_idx = stp_array.index(stp)
 
-		# # modify stp_array to prevent duplicate voting
-		# c = hash_blake2s(msg)
-		# y = [nym + c for nym in stp_array]
+		# modify stp_array to prevent duplicate voting
+		stp_array.append(msg_hash(msg, sha1))
 
-		# c_0, s, Y = ring_signature(self.pri_key, stp_idx, msg, y)
-
-		# print(c_0)
-		# print(s)
-		# print(Y.x())
-		# print(Y.y())
-		# print(Y.curve())
-		# print(Y.order())
-
-
-		# print(verify_ring_signature(msg, y, c_0, s, Y))
-
-		# sig = (c_0, s, Y.x(), Y.y())
-		sig = []
+		sig = sign_lrs(msg, self.pri_key, stp_idx, stp_array, g=generator)
 
 		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
+
+	def show(self):
+		messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
+
+		# modify for printing purposes
+		for msg_id, msg_info in messages:
+			msg_info[Constants.NYM] %= Constants.MOD
+		pprint.PrettyPrinter(indent=4).pprint(messages)
 
 	def show_help(self):
 		print('Instructions:')
@@ -107,8 +101,7 @@ if __name__ == '__main__':
 			if s == 'HELP':
 				c.show_help()
 			elif s == 'SHOW':
-				messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
-				pprint.PrettyPrinter(indent=4).pprint(messages)
+				c.show()
 			elif re.match("^WRITE$", s) is not None:
 				msg = input('Write message here: ')
 				c.post(msg)

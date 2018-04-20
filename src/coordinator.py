@@ -117,6 +117,10 @@ class Coordinator:
 		self.sprint('Beginning message phase...')
 		self.phase = Constants.MESSAGE_PHASE
 
+	def begin_feedback_phase(self):
+		self.sprint('Beginning feedback phase...')
+		self.phase = Constants.FEEDBACK_PHASE
+
 	def end_round(self):
 		# TODO: Don't hardcode the leader
 		server_addr = self.servers[-1]
@@ -140,7 +144,7 @@ class Coordinator:
 
 				# verify message information
 				if not self.verify_message(msg):
-					self.eprint('Error processing message.')
+					self.eprint('Error processing ' + str(msg) + '.')
 					continue
 
 				msg_head, *msg_args = msg
@@ -183,8 +187,7 @@ if __name__ == '__main__':
 				time.sleep(0.1)
 			# message phase has begun
 			time.sleep(Constants.MESSAGE_PHASE_LENGTH_IN_SECS)
-			c.sprint('Beginning feedback phase...')
-			c.phase = Constants.FEEDBACK_PHASE
+			c.begin_feedback_phase()
 			time.sleep(Constants.FEEDBACK_PHASE_LENGTH_IN_SECS)
 			c.end_round()
 			while c.phase == Constants.FEEDBACK_PHASE:

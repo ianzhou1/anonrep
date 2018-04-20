@@ -1,4 +1,33 @@
 from testing_helpers import *
+import random
+import time
+
+def test_base_anonrep():
+	co = create_coordinator()
+	p = random.sample(range(1000, 65536), 2)
+	s1 = create_server(p[0])
+	s2 = create_server(p[1])
+
+	begin_client_registration(co)
+
+	c1 = create_client(s1)
+	c2 = create_client(s1)
+
+	start_message_phase(co)
+
+	post(c1, 'hello1')
+	post(c2, 'hello2')
+
+	start_feedback_phase(co)
+
+	show(c1)
+
+	vote(c1, -1, 0)
+	vote(c1, -1, 0)
+	vote(c1, 1, 1)
+	vote(c2, 1, 0)
+
+	show(c2)
 
 def test_basic_coinshuffle():
 	co = create_blockchain_coordinator()

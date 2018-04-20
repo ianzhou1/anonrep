@@ -6,14 +6,25 @@ from functools import singledispatch
 
 # constants class
 class Constants:
-	MOD = 65537  # prime modulo
-	G = 1848  # primitive root of MOD
-	INTEGER_SIZE = 8  # number of bytes that will be used to denote the size of payload
-	BUFFER_SIZE = 4096  # socket buffer receive buffer size
-	ENCODING = 'UTF-8'  # socket encoding
-	INIT_REPUTATION = [1, 1]  # initial reputation (secret, text)
-	INIT_FEEDBACK = [0, 0]  # initial feedback
-	INIT_ID = -1  # id indicating initial phase
+	MOD = 65537 # prime modulo (only used for printing shorter nyms)
+	G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD640' +
+			'6CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B' +
+			'886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A2' +
+			'4C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D0' +
+			'8BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16) # generator
+	P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A' +
+			'9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906' +
+			'112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFF' +
+			'D6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C' +
+			'1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16) # prime modulo
+	Q = int('F518AA8781A8DF278ABA4E7D64B7CB9D49462353', 16) # subgroup
+
+	INTEGER_SIZE = 8 # number of bytes that will be used to denote the size of payload
+	BUFFER_SIZE = 4096 # socket buffer receive buffer size
+	ENCODING = 'UTF-8' # socket encoding
+	INIT_REPUTATION = [1, 1] # initial reputation (secret, text)
+	INIT_FEEDBACK = [0, 0] # initial feedback
+	INIT_ID = -1 # id indicating initial phase
 
 	AES_KEY_LENGTH = 16  # length of AES key for CoinShuffle
 	RSA_KEY_LENGTH = 2048  # length of RSA key for CoinShuffle
@@ -123,7 +134,7 @@ def sendrecv(addr, args):
 	return recv(s)
 
 # modular exponentiation
-def powm(base, exp, mod=Constants.MOD):
+def powm(base, exp, mod=Constants.P):
 	return pow(base, exp, mod)
 
 # extended euclidean algorithm
@@ -141,21 +152,21 @@ def gcd(b, a):
 	return g
 
 # modular inverse
-def modinv(num, mod=Constants.MOD):
+def modinv(num, mod=Constants.P):
 	g, inv, _ = egcd(num, mod)
 	return (inv % mod) if g == 1 else None
 
 # message hash function
-def msg_hash(msg, hash_func, mod=Constants.MOD):
+def msg_hash(msg, hash_func, mod=Constants.P):
 	msg = msg.encode(Constants.ENCODING)
 	return int(hash_func(msg).hexdigest(), 16) % mod
 
 # random key
-def randkey(start=0, end=Constants.MOD - 1):
+def randkey(start=0, end=Constants.P - 1):
 	return randint(start, end)
 
 # random key (relatively prime)
-def randkeyRP(start=0, end=Constants.MOD - 1):
+def randkeyRP(start=0, end=Constants.P - 1):
 	ret = randkey(start, end)
 	while gcd(ret, end + 1) != 1:
 		ret = randkey(start, end)
