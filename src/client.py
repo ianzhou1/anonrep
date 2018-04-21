@@ -3,13 +3,17 @@ import re
 import sys
 
 import config
-from util import Constants, send, sendrecv, powm, modinv, msg_hash, randkey, randkeyRP
+from util import Constants, send, sendrecv, powm, modinv, msg_hash, randkey, randkeyRP, eprint
 from lrs import sign_lrs
 from hashlib import sha1
 
-# client class
+
 class Client:
+	"""Base implementation of client."""
+
 	def __init__(self, server_host, server_port):
+		self.name = 'CLIENT'
+
 		# core variables
 		self.pri_key = randkey()
 		self.pub_key = powm(Constants.G, self.pri_key)
@@ -20,14 +24,8 @@ class Client:
 		# new client
 		send(self.server_addr, [Constants.NEW_CLIENT, self.pub_key])
 
-	def sprint(self, s):
-		print('[CLIENT] ' + s)
-
-	def eprint(self, err):
-		print('[CLIENT] ' + err, file=sys.stderr)
-
 	def sign(self, msg, generator):
-		# ElGamal signature
+		"""Sign with ElGamal signature."""
 		r, s = 0, 0
 
 		while s == 0:
@@ -39,6 +37,7 @@ class Client:
 		return (r, s)
 
 	def post(self, msg):
+		"""Post a message."""
 		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
 
 		stp = powm(generator, self.pri_key)
@@ -47,11 +46,12 @@ class Client:
 		send(self.server_addr, [Constants.NEW_MESSAGE, msg, stp, sig])
 
 	def vote(self, amount, msg_id):
+		"""Vote on a message."""
 		messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
 
 		# verify message id
 		if msg_id < 0 or msg_id >= len(messages):
-			self.eprint('Invalid message id.')
+			eprint(self.name, 'Invalid message id.')
 			return
 
 		msg = messages[msg_id][1][Constants.MSG]
@@ -68,6 +68,7 @@ class Client:
 		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
 
 	def show(self):
+		"""Display the message board."""
 		messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
 
 		# modify for printing purposes
@@ -76,6 +77,7 @@ class Client:
 		pprint.PrettyPrinter(indent=4).pprint(messages)
 
 	def show_help(self):
+		"""Display help text."""
 		print('Instructions:')
 		print('--------------------------------------------------------')
 		print('HELP           : Displays this help message')
@@ -84,6 +86,7 @@ class Client:
 		print('VOTE UP [num]  : Votes up the message with ID [num]')
 		print('VOTE DOWN [num]: Votes down the message with ID [num]')
 		print('--------------------------------------------------------')
+
 
 if __name__ == '__main__':
 	if len(sys.argv) != 3:

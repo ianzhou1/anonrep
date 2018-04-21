@@ -10,6 +10,8 @@ from coordinator import Coordinator
 from util import Constants, send
 
 class BlockchainCoordinator(Coordinator):
+	"""Coordinator implementation for the blockchain version of AnonRep."""
+
 	def __init__(self, host, port):
 		self.blockchain = bc.LocalBlockchain()
 		self.contract_address = self.blockchain.deploy_contract('reputation.sol')
@@ -32,7 +34,19 @@ class BlockchainCoordinator(Coordinator):
 		self.msg_types.update(new_msg_types)
 
 	def get_contract_address(self, s, msg_args):
+		"""Handles request for reputation contract address."""
 		send(s, self.contract_address)
+
+	def end_announcement_phase(self, msg_args):
+		"""Handles end of announcement phase."""
+		super().end_announcement_phase(msg_args)
+
+		# denotes where the message board should start looking from when calculating
+		# net feedback
+		self.board.message_marker = len(self.board.board)
+		# reset addrs
+		self.board.addrs = {}
+
 
 if __name__ == '__main__':
 	if len(sys.argv) != 1:
@@ -50,22 +64,26 @@ if __name__ == '__main__':
 
 		print('*** Press [ENTER] to begin announcement phase. ***')
 		input()
-		c.phase = Constants.ANNOUNCEMENT_PHASE
 
 		while True:
+			# announcement phase
 			c.begin_announcement_phase()
 			while c.phase != Constants.MESSAGE_PHASE:
 				time.sleep(0.1)
-			# message phase has begun
-			c.board.begin_message_phase()
+
+			# message phase
 			time.sleep(Constants.MESSAGE_PHASE_LENGTH_IN_SECS)
-			c.sprint('Beginning feedback phase...')
-			c.phase = Constants.FEEDBACK_PHASE
+
+			# feedback phase
+			c.begin_feedback_phase()
 			time.sleep(Constants.FEEDBACK_PHASE_LENGTH_IN_SECS)
-			c.board.end_feedback_phase()
+
+			# coinshuffle phase
 			c.board.start_coinshuffle()
 			while c.phase != Constants.COINSHUFFLE_FINISHED_PHASE:
 				time.sleep(0.1)
+
+			# end round and restart
 			c.end_round()
 			while c.phase != Constants.ANNOUNCEMENT_PHASE:
 				time.sleep(0.1)

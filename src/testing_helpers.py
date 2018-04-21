@@ -14,7 +14,7 @@ from threading import Thread
 
 def get_free_port():
 	tcp = socket.socket()
-	tcp.bind(('', 0))
+	tcp.bind(('localhost', 0))
 	addr, port = tcp.getsockname()
 	tcp.close()
 	return port
@@ -69,10 +69,6 @@ def begin_client_registration(co, sleep=0.05):
 
 def start_message_phase(co, sleep=0.01):
 	co.begin_announcement_phase()
-	try:
-		co.board.begin_message_phase()
-	except:
-		pass
 	while co.phase != Constants.MESSAGE_PHASE:
 		time.sleep(sleep)
 
@@ -80,7 +76,6 @@ def start_feedback_phase(co):
 	co.begin_feedback_phase()
 
 def start_coinshuffle_phase(co):
-	co.board.end_feedback_phase()
 	co.board.start_coinshuffle();
 	while co.phase != Constants.COINSHUFFLE_FINISHED_PHASE:
 		time.sleep(0.01)

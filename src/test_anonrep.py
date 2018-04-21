@@ -47,7 +47,7 @@ def test_basic_coinshuffle():
 
 	start_feedback_phase(co)
 
-	original_addresses = [c.wallets[0].address for c in [c1, c2, c3]]
+	original_addresses = [post[1][Constants.REP][0] for post in co.board.board]
 
 	vote(c1, 1, 0)
 	vote(c1, 1, 1)
@@ -58,3 +58,13 @@ def test_basic_coinshuffle():
 	new_addresses = [c.wallets[0].address for c in [c1, c2, c3]]
 
 	assert(len(set(original_addresses) & set(new_addresses)) == 0)
+
+
+"""TO TEST:
+
+- Consecutive Coinshuffles for
+	- People going from 0 reputation -> nonzero reputation
+	- People going from nonzero reputation -> zero reputation
+
+
+"""

@@ -7,6 +7,8 @@ from server import Server
 from util import Constants, send
 
 class BlockchainServer(Server):
+	"""Server implementation for the blockchain version of AnonRep."""
+
 	def __init__(self, host, port):
 		super().__init__(host, port)
 		# add items to self.respond and self.msg_types
@@ -24,11 +26,16 @@ class BlockchainServer(Server):
 		self.msg_types.update(new_msg_types)
 
 	def new_message(self, msg_args):
+		"""Handles posting a new message to the message board."""
 		client_msg, client_stp, client_sig, addresses, signatures, addr = msg_args
 
 		# verify message, pseudonym, and signature
 		if not self.verify_signature(client_msg, client_stp, client_sig):
 			self.eprint('Message signature verification failed.')
+			return
+
+		if len(addresses) != len(signatures) or len(addresses) == 0:
+			self.eprint('Invalid number of addresses/signatures.')
 			return
 
 		# verify wallets
@@ -38,7 +45,9 @@ class BlockchainServer(Server):
 				return
 
 		# pass on to coordinator
-		send(config.COORDINATOR_ADDR, [Constants.POST_MESSAGE, client_msg, client_stp, addresses, addr])
+		send(config.COORDINATOR_ADDR,
+			[Constants.POST_MESSAGE, client_msg, client_stp, addresses, addr])
+
 
 if __name__ == '__main__':
 	if len(sys.argv) != 3:

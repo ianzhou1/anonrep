@@ -1,12 +1,12 @@
 import socket
+import sys
 import json
-import hashlib
 from random import randint
 from functools import singledispatch
 
-# constants class
+
 class Constants:
-	MOD = 65537 # prime modulo (only used for printing shorter nyms)
+	MOD = 65537  # prime modulo (only used for printing shorter nyms)
 	G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD640' +
 			'6CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B' +
 			'886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A2' +
@@ -19,12 +19,12 @@ class Constants:
 			'1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16) # prime modulo
 	Q = int('F518AA8781A8DF278ABA4E7D64B7CB9D49462353', 16) # subgroup
 
-	INTEGER_SIZE = 8 # number of bytes that will be used to denote the size of payload
-	BUFFER_SIZE = 4096 # socket buffer receive buffer size
-	ENCODING = 'UTF-8' # socket encoding
-	INIT_REPUTATION = [1, 1] # initial reputation (secret, text)
-	INIT_FEEDBACK = [0, 0] # initial feedback
-	INIT_ID = -1 # id indicating initial phase
+	INTEGER_SIZE = 8  # number of bytes that will be used to denote the size of payload
+	BUFFER_SIZE = 4096  # socket buffer receive buffer size
+	ENCODING = 'UTF-8'  # socket encoding
+	INIT_REPUTATION = [1, 1]  # initial reputation (secret, text)
+	INIT_FEEDBACK = [0, 0]  # initial feedback
+	INIT_ID = -1  # id indicating initial phase
 
 	AES_KEY_LENGTH = 16  # length of AES key for CoinShuffle
 	RSA_KEY_LENGTH = 2048  # length of RSA key for CoinShuffle
@@ -74,7 +74,7 @@ class Constants:
 	POST_MESSAGE = 'POST_MESSAGE'
 	POST_FEEDBACK = 'POST_FEEDBACK'
 	DISP_BOARD = 'DISP_BOARD'
-	END_MESSAGE_PHASE = 'END_MESSAGE_PHASE'
+	RESTART_ROUND = 'RESTART_ROUND'
 
 	# headers requiring open socket
 	OPEN_SOCKET = set([GET_GENERATOR,
@@ -90,11 +90,13 @@ class Constants:
 	REP = 'rep' # reputation score
 	FB = 'fb' # feedback
 
-# send arguments through socket
+
 @singledispatch
 def send(s, args):
-	payload = json.dumps(args).encode(Constants.ENCODING)
-	s.send(len(payload).to_bytes(Constants.INTEGER_SIZE, byteorder='big') + payload)
+	"""Send arguments through socket s."""
+	msg = json.dumps(args).encode(Constants.ENCODING)
+	s.send(len(msg).to_bytes(Constants.INTEGER_SIZE, byteorder='big') + msg)
+
 
 @send.register(tuple)
 def _(addr, args):
@@ -102,13 +104,16 @@ def _(addr, args):
 	s.connect(addr)
 	send(s, args)
 
-def sendbytes(addr, payload):
+
+def sendbytes(addr, msg):
+	"""Send raw bytes to addr."""
 	s = socket.socket()
 	s.connect(addr)
-	s.send(len(payload).to_bytes(Constants.INTEGER_SIZE, byteorder='big') + payload)
+	s.send(len(msg).to_bytes(Constants.INTEGER_SIZE, byteorder='big') + msg)
 
-# receive arguments through socket
+
 def recv(s):
+	"""Receive arguments through socket s."""
 	remaining = int.from_bytes(s.recv(Constants.INTEGER_SIZE), byteorder='big')
 	chunks = []
 	while remaining > 0:
@@ -117,7 +122,9 @@ def recv(s):
 		chunks.append(chunk)
 	return json.loads(b''.join(chunks).decode(Constants.ENCODING))
 
+
 def recvbytes(s):
+	"""Receive bytes through socket s."""
 	remaining = int.from_bytes(s.recv(Constants.INTEGER_SIZE), byteorder='big')
 	chunks = []
 	while remaining > 0:
@@ -126,19 +133,22 @@ def recvbytes(s):
 		chunks.append(chunk)
 	return b''.join(chunks)
 
-# send and receive arguments through socket
+
 def sendrecv(addr, args):
+	"""Like send() except it waits for a response and returns it."""
 	s = socket.socket()
 	s.connect(addr)
 	send(s, args)
 	return recv(s)
 
-# modular exponentiation
+
 def powm(base, exp, mod=Constants.P):
+	"""Modular exponentiation."""
 	return pow(base, exp, mod)
 
-# extended euclidean algorithm
+
 def egcd(b, a):
+	"""Extended euclidean algorithm."""
 	x0, x1, y0, y1 = 1, 0, 0, 1
 	while a != 0:
 		q, b, a = b // a, a, b % a
@@ -146,28 +156,41 @@ def egcd(b, a):
 		y0, y1 = y1, y0 - q * y1
 	return  b, x0, y0
 
-# greatest common denominator
+
 def gcd(b, a):
+	"""Returns the greatest common denominator of b and a."""
 	g, _, __ = egcd(b, a)
 	return g
 
-# modular inverse
+
 def modinv(num, mod=Constants.P):
+	"""Modular inverse."""
 	g, inv, _ = egcd(num, mod)
 	return (inv % mod) if g == 1 else None
 
-# message hash function
+
 def msg_hash(msg, hash_func, mod=Constants.P):
+	"""Message hash function."""
 	msg = msg.encode(Constants.ENCODING)
 	return int(hash_func(msg).hexdigest(), 16) % mod
 
-# random key
+
 def randkey(start=0, end=Constants.P - 1):
+	"""Returns a random key."""
 	return randint(start, end)
 
-# random key (relatively prime)
+
 def randkeyRP(start=0, end=Constants.P - 1):
+	"""Returns a random key (relatively prime to end + 1)."""
 	ret = randkey(start, end)
 	while gcd(ret, end + 1) != 1:
 		ret = randkey(start, end)
 	return ret
+
+def sprint(name, s):
+	"""Prints."""
+	print('[{}] {}'.format(name, s))
+
+def eprint(name, err):
+	"""Prints error."""
+	print('[{}] {}'.format(name, err), file=sys.stderr)
