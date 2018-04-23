@@ -6,18 +6,21 @@ from functools import singledispatch
 
 
 class Constants:
-	MOD = 65537  # prime modulo (only used for printing shorter nyms)
-	G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD640' +
-			'6CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B' +
-			'886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A2' +
-			'4C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D0' +
-			'8BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16) # generator
-	P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A' +
-			'9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906' +
-			'112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFF' +
-			'D6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C' +
-			'1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16) # prime modulo
-	Q = int('F518AA8781A8DF278ABA4E7D64B7CB9D49462353', 16) # subgroup
+	MOD = 66071  # prime modulo (only used for printing shorter nyms)
+	# G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD640' +
+	# 		'6CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B' +
+	# 		'886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A2' +
+	# 		'4C087A091F531DBF0A0169B6A28AD662A4D18E73AFA32D779D5918D0' +
+	# 		'8BC8858F4DCEF97C2A24855E6EEB22B3B2E5', 16) # generator
+	# P = int('B10B8F96A080E01DDE92DE5EAE5D54EC52C99FBCFB06A3C69A6A' +
+	# 		'9DCA52D23B616073E28675A23D189838EF1E2EE652C013ECB4AEA906' +
+	# 		'112324975C3CD49B83BFACCBDD7D90C4BD7098488E9C219A73724EFF' +
+	# 		'D6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C' +
+	# 		'1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16) # prime modulo
+	# Q = int('F518AA8781A8DF278ABA4E7D64B7CB9D49462353', 16) # subgroup
+	G = 190
+	P = 66071
+	Q = 6607
 
 	INTEGER_SIZE = 8  # number of bytes that will be used to denote the size of payload
 	BUFFER_SIZE = 4096  # socket buffer receive buffer size
@@ -144,6 +147,9 @@ def sendrecv(addr, args):
 
 def powm(base, exp, mod=Constants.P):
 	"""Modular exponentiation."""
+	# if exp < 0:
+	# 	inv = modinv(base, mod)
+	# 	return pow(inv, -exp, mod) if inv else None
 	return pow(base, exp, mod)
 
 
@@ -169,6 +175,12 @@ def modinv(num, mod=Constants.P):
 	return (inv % mod) if g == 1 else None
 
 
+def divide(a, b, p=Constants.P):
+	"""Modular division."""
+	m = modinv(b, p)
+	return (m * a) % p if m else None
+
+
 def msg_hash(msg, hash_func, mod=Constants.P):
 	"""Message hash function."""
 	msg = msg.encode(Constants.ENCODING)
@@ -187,9 +199,11 @@ def randkeyRP(start=0, end=Constants.P - 1):
 		ret = randkey(start, end)
 	return ret
 
+
 def sprint(name, s):
 	"""Prints."""
 	print('[{}] {}'.format(name, s))
+
 
 def eprint(name, err):
 	"""Prints error."""

@@ -3,8 +3,8 @@ import re
 import sys
 
 import config
+import lrs
 from util import Constants, send, sendrecv, powm, modinv, msg_hash, randkey, randkeyRP, eprint
-from lrs import sign_lrs
 from hashlib import sha1
 
 
@@ -63,7 +63,7 @@ class Client:
 		# modify stp_array to prevent duplicate voting
 		stp_array.append(msg_hash(msg, sha1))
 
-		sig = sign_lrs(msg, self.pri_key, stp_idx, stp_array, g=generator)
+		sig = lrs.sign(msg, self.pri_key, stp_idx, stp_array, g=generator)
 
 		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
 

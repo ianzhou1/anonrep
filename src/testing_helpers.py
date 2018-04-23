@@ -80,6 +80,11 @@ def start_coinshuffle_phase(co):
 	while co.phase != Constants.COINSHUFFLE_FINISHED_PHASE:
 		time.sleep(0.01)
 
+def end_round(co, sleep=0.05):
+	co.end_round()
+	while co.phase != Constants.ANNOUNCEMENT_PHASE:
+		time.sleep(sleep)
+
 #############################
 # Client functions
 #############################

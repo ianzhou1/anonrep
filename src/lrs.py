@@ -5,7 +5,7 @@ from util import Constants, powm, randkey
 from hashlib import sha1
 
 # sign a message using a linkable ring signature
-def sign_lrs(msg, x_i, idx, L, g=Constants.G, p=Constants.P, q=Constants.Q):
+def sign(msg, x_i, idx, L, g=Constants.G, p=Constants.P, q=Constants.Q):
 	n = len(L)
 	c = [0 for _ in range(n)]
 	s = [0 for _ in range(n)]
@@ -33,7 +33,7 @@ def sign_lrs(msg, x_i, idx, L, g=Constants.G, p=Constants.P, q=Constants.Q):
 	return (c[0], s, t)
 
 # verify a message and linkable ring signature
-def verify_lrs(msg, L, c_0, s, t, g=Constants.G, p=Constants.P, q=Constants.Q):
+def verify(msg, L, c_0, s, t, g=Constants.G, p=Constants.P, q=Constants.Q):
 	n = len(L)
 	c = [0 for _ in range(n)]
 	c[0] = c_0

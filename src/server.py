@@ -3,8 +3,8 @@ import sys
 import traceback
 
 import config
+import lrs
 from util import Constants, send, recv, powm, modinv, msg_hash, randkey
-from lrs import verify_lrs, concat
 from hashlib import sha1
 
 # server class
@@ -16,7 +16,7 @@ class Server:
 		self.next_addr = None
 
 		# core variables
-		self.eph_key = None
+		self.eph_key = randkey()
 		self.pri_key = randkey()
 		self.pub_key = powm(Constants.G, self.pri_key)
 		self.ltp_list = {} # long-term pseudonyms and encrypted reputation scores
@@ -84,14 +84,14 @@ class Server:
 
 	def encryptElGamal(self, rep, server_pub_keys):
 		# ElGamal encryption
-		key = randkey()
 		secret_c, text = rep
-		secret_c = (secret_c * powm(Constants.G, key)) % Constants.P
+		secret_c = (secret_c * powm(Constants.G, self.eph_key)) % Constants.P
 
 		secret = powm(secret_c, self.pri_key)
 		text = (text * secret) % Constants.P
 		for server_pub_key in server_pub_keys:
-			text = (text * powm(server_pub_key, key)) % Constants.P
+			text = (text * powm(server_pub_key, self.eph_key)) % Constants.P
+		# TODO: don't append during every call to encrypt
 		server_pub_keys.append(self.pub_key)
 
 		return (secret_c, text)
@@ -280,7 +280,7 @@ class Server:
 			return
 
 		# verify linkable ring signature
-		if not verify_lrs(client_msg, stp_array, *client_sig, g=self.generator):
+		if not lrs.verify(client_msg, stp_array, *client_sig, g=self.generator):
 			self.eprint('Feedback linkable ring signature verification failed.')
 			return
 
@@ -314,7 +314,7 @@ class Server:
 
 		# tell coordinator that it's time to start a new round
 		if init_id == self.server_id:
-			send(config.COORDINATOR_ADDR, [Constants.END_MESSAGE_PHASE])
+			send(config.COORDINATOR_ADDR, [Constants.RESTART_ROUND])
 			return
 
 		if init_id == Constants.INIT_ID:
@@ -322,7 +322,12 @@ class Server:
 
 		# add announcement list to current server and update next server
 		self.ltp_list = {k: v for (k, v) in ann_list}
-		print('ltp list: ' + str(self.ltp_list))
+
+		# modify for printing purposes
+		ltp_list = {}
+		for k, v in ann_list:
+			ltp_list[k % Constants.MOD] = [_ % Constants.MOD for _ in v]
+		print('ltp list: ' + str(ltp_list))
 		send(self.next_addr, [Constants.REPLACE_LTP, ann_list, init_id])
 
 	def update_id(self, msg_args):

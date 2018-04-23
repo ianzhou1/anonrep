@@ -29,6 +29,8 @@ def test_base_anonrep():
 
 	show(c2)
 
+	end_round(co)
+
 def test_basic_coinshuffle():
 	co = create_blockchain_coordinator()
 	s = create_blockchain_server()
