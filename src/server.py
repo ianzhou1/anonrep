@@ -31,6 +31,7 @@ class Server:
 		self.ss = socket.socket()
 		self.ss.bind(self.addr)
 		self.ss.listen(5)
+		self.server_started = False
 
 		send(config.COORDINATOR_ADDR, [Constants.NEW_SERVER, self.addr, self.pub_key])
 
@@ -237,7 +238,7 @@ class Server:
 		for k, v in ann_list:
 			stp_list[k % Constants.MOD] = [v[0] % Constants.MOD, v[1]]
 		print('stp list: ' + str(stp_list))
-		
+
 		# update next server
 		send(self.next_addr, [Constants.REPLACE_STP, ann_list, generator, init_id])
 
@@ -347,6 +348,7 @@ class Server:
 			try:
 				# accept and receive socket message
 				s, addr = self.ss.accept()
+				self.server_started = True
 				msg = recv(s)
 
 				# verify message information

@@ -29,6 +29,7 @@ class Coordinator:
 		self.ss = socket.socket()
 		self.ss.bind(self.addr)
 		self.ss.listen(5)
+		self.server_started = False
 
 		sys.stdout.write('\r# servers: 0 | []')
 		sys.stdout.flush()

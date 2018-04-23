@@ -85,7 +85,6 @@ class BlockchainClient(Client):
 		"""Handles receiving keys and next hop addresses from the coordinator."""
 		next_addr, e_keys = msg_args
 		self.next_addr = tuple(next_addr)
-		print(e_keys)
 		self.e_keys = [PKCS1_OAEP.new(RSA.importKey(key)) for key in e_keys]
 		send(s, ['ACK'])
 		s, addr = self.ss.accept()

@@ -67,9 +67,12 @@ class Client:
 
 		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
 
+	def get_message_board(self):
+		return sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
+
 	def show(self):
 		"""Display the message board."""
-		messages = sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])
+		messages = self.get_message_board()
 
 		# modify for printing purposes
 		for msg_id, msg_info in messages:
