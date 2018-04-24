@@ -1,28 +1,6 @@
 import random
 from util import Constants, send, recv, randkey, powm, modinv, divide
 
-# import random
-# n = 1000
-# pi = [_ for _ in range(n)]
-# pi_inv = list(pi)
-# random.shuffle(pi)
-# for i in range(n):
-# 	pi_inv[pi[i]] = i
-
-# # ltps = [powm(g, randkey(0, p - 1), p) for _ in range(n)]
-# keys = [randkey(0, p - 1) for _ in range(n)]
-# init = [[1, 1] for _ in range(n)]
-# elts_pre = []
-# for i in range(n):
-# 	secret, text = init[i]
-# 	elts_pre.append((secret, (text * powm(secret, pri_key, p)) % p))
-# elts_post = []
-# for i in range(n):
-# 	# nym = powm(ltps[pi[i]], keys[pi[i]], p)
-# 	secret, text = encryptElGamal(elts_pre[pi[i]], keys[pi[i]], [])
-# 	elts_post.append((secret, text))
-# h = pub_key
-
 def generate_permutation(n):
 	pi = [_ for _ in range(n)]
 	random.shuffle(pi)

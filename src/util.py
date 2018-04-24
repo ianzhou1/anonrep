@@ -151,9 +151,6 @@ def sendrecv(addr, args):
 
 def powm(base, exp, mod=Constants.P):
 	"""Modular exponentiation."""
-	# if exp < 0:
-	# 	inv = modinv(base, mod)
-	# 	return pow(inv, -exp, mod) if inv else None
 	return pow(base, exp, mod)
 
 
