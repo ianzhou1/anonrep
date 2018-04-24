@@ -22,10 +22,14 @@ def test_base_anonrep():
 	board_before_voting = c1.get_message_board()
 	assert(len(board_before_voting) == 2)
 
+	show(c1)
+
 	vote(c1, -1, 0)
 	vote(c1, -1, 0)
 	vote(c1, 1, 1)
 	vote(c2, 1, 0)
+
+	show(c2)
 
 	board_after_voting = c2.get_message_board()
 	assert(len(board_after_voting) == 2)
@@ -34,3 +38,7 @@ def test_base_anonrep():
 	assert(board_after_voting[1][1][Constants.FB] == [1, 0])
 
 	end_round(co)
+
+	start_message_phase(co)
+
+	show(c1)

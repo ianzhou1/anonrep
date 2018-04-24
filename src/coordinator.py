@@ -121,8 +121,8 @@ class Coordinator:
 		time.sleep(0.1)
 
 		server_addr = self.servers[0]
-		send(server_addr,
-			[Constants.NEW_ANNOUNCEMENT, [], Constants.G, Constants.INIT_ID])
+		send(server_addr, [Constants.NEW_ANNOUNCEMENT,
+				Constants.G, [], [], 0, 0, Constants.INIT_ID])
 
 	def begin_feedback_phase(self):
 		"""Begins the feedback phase."""
@@ -132,7 +132,8 @@ class Coordinator:
 	def end_round(self):
 		"""Sends signal to servers to end the round."""
 		server_addr = self.servers[-1]
-		send(server_addr, [Constants.REV_ANNOUNCEMENT, [], [], Constants.INIT_ID])
+		send(server_addr, [Constants.REV_ANNOUNCEMENT,
+				Constants.INIT_SECRET, [], [], [], 0, 0, Constants.INIT_ID])
 
 	def run(self):
 		while True:

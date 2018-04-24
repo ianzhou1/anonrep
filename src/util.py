@@ -25,7 +25,8 @@ class Constants:
 	INTEGER_SIZE = 8  # number of bytes that will be used to denote the size of payload
 	BUFFER_SIZE = 4096  # socket buffer receive buffer size
 	ENCODING = 'UTF-8'  # socket encoding
-	INIT_REPUTATION = [1, 1]  # initial reputation (secret, text)
+	INIT_SECRET = 1  # initial secret
+	INIT_REPUTATION = 1  # initial reputation
 	INIT_FEEDBACK = [0, 0]  # initial feedback
 	INIT_ID = -1  # id indicating initial phase
 
@@ -80,12 +81,15 @@ class Constants:
 	RESTART_ROUND = 'RESTART_ROUND'
 
 	# headers requiring open socket
-	OPEN_SOCKET = set([GET_GENERATOR,
-		               GET_STP_ARRAY,
-		               DISP_BOARD,
-		               GET_CONTRACT_ADDRESS,
-		               PARTICIPATION_STATUS,
-		               KEYS])
+	OPEN_SOCKET = set([
+			NEW_ANNOUNCEMENT,
+			REV_ANNOUNCEMENT,
+			GET_GENERATOR,
+			GET_STP_ARRAY,
+			DISP_BOARD,
+			GET_CONTRACT_ADDRESS,
+			PARTICIPATION_STATUS,
+			KEYS])
 
 	# message board keys
 	MSG = 'msg' # message
