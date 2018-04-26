@@ -38,12 +38,14 @@ class Coordinator:
 		self.respond = {
 				Constants.NEW_SERVER: self.new_server,
 				Constants.END_ANNOUNCEMENT_PHASE: self.end_announcement_phase,
+				Constants.UPDATE_NEIGHBORS: self.server_ready,
 		}
 
 		# message type dict for received messages
 		self.msg_types = {
 				Constants.NEW_SERVER: [list, int],
 				Constants.END_ANNOUNCEMENT_PHASE: [],
+				Constants.UPDATE_NEIGHBORS: [],
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
@@ -89,6 +91,9 @@ class Coordinator:
 		sprint(self.name, 'Beginning message phase...')
 		self.phase = Constants.MESSAGE_PHASE
 
+	def server_ready(self, msg_args):
+		self.servers_ready += 1
+
 	def broadcast_neighbors(self):
 		"""Tells all servers about their neighbors."""
 		for idx, server_addr in enumerate(self.servers):
@@ -115,10 +120,12 @@ class Coordinator:
 		random.shuffle(self.servers)
 
 		# update servers and neighbors
+		self.servers_ready = 0
 		self.broadcast_neighbors()
 
 		# pause before beginning announcement phase
-		time.sleep(0.1)
+		while self.servers_ready != self.num_servers:
+			time.sleep(0.01)
 
 		server_addr = self.servers[0]
 		send(server_addr, [Constants.NEW_ANNOUNCEMENT,

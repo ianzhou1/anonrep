@@ -426,6 +426,7 @@ class Server:
 
 		self.set_prev_server(prev_addr)
 		self.set_next_server(next_addr)
+		send(config.COORDINATOR_ADDR, [Constants.UPDATE_NEIGHBORS])
 
 	def run(self):
 		while True:
