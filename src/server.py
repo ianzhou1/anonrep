@@ -202,7 +202,7 @@ class Server:
 				ann_list = []
 				ann_list.append([k for k in self.ltp_list.keys()])
 				ann_list.append([(self.secret, v) for v in self.ltp_list.values()])
-			
+
 			else:
 				# verify shuffle from prev server
 				if not shuffle.verify(s, ann_list_pre[1], ann_list_post[1], g_, h_):
@@ -296,13 +296,14 @@ class Server:
 		# send short term pseudonym list
 		send(s, self.stp_array)
 
-	def new_feedback(self, msg_args):
+	def new_feedback(self, s, msg_args):
 		client_msg_id, client_msg, client_vote, client_sig = msg_args
 		client_tag = client_sig[2]
 
 		# verify vote
 		if client_vote not in [-1, 1]:
 			self.eprint('Invalid vote received.')
+			send(s, [Constants.FAIL, 'Invalid vote amount.'])
 			return
 
 		# modify copy of stp_array to prevent duplicate voting
@@ -312,15 +313,18 @@ class Server:
 		# verify not a duplicate
 		if client_tag in self.lrs_duplicates:
 			self.eprint('Feedback linkable ring signature duplicate detected.')
+			send(s, [Constants.FAIL, 'Duplicate vote.'])
 			return
 
 		# verify linkable ring signature
 		if not lrs.verify(client_msg, stp_array, *client_sig, g=self.generator):
 			self.eprint('Feedback linkable ring signature verification failed.')
+			send(s, [Constants.FAIL, 'LRS verification failed.'])
 			return
 
 		self.lrs_duplicates.add(client_tag)
 		send(config.COORDINATOR_ADDR, [Constants.POST_FEEDBACK, client_msg_id, client_vote])
+		send(s, [Constants.SUCCESS])
 
 	# [NOTE] must initiate rev announcement on prev of leader
 	def rev_announcement(self, s, msg_args):

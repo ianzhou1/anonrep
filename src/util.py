@@ -2,6 +2,7 @@ import socket
 import sys
 import json
 from random import randint
+from threading import Thread
 from functools import singledispatch
 
 
@@ -35,6 +36,10 @@ class Constants:
 
 	MESSAGE_PHASE_LENGTH_IN_SECS = 6
 	FEEDBACK_PHASE_LENGTH_IN_SECS = 6
+
+	# general headers
+	SUCCESS = 'SUCCESS'
+	FAIL = 'FAIL'
 
 	# coordinator phases
 	REGISTRATION_PHASE = 'REGISTRATION_PHASE'
@@ -87,6 +92,7 @@ class Constants:
 			GET_GENERATOR,
 			GET_STP_ARRAY,
 			DISP_BOARD,
+			NEW_FEEDBACK,
 			GET_CONTRACT_ADDRESS,
 			PARTICIPATION_STATUS,
 			KEYS])

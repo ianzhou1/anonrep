@@ -128,6 +128,9 @@ class BlockchainMessageBoard(MessageBoard):
 			e_keys.append(e_key)
 
 		# start the shuffling
+		if len(participants) == 0:
+			self.coordinator.phase = Constants.COINSHUFFLE_FINISHED_PHASE
+			return
 		sendbytes(participants[0][0], b'')
 
 	def end_coinshuffle(self, msg_args):

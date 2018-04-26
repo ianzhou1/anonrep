@@ -52,7 +52,7 @@ class Client:
 		# verify message id
 		if msg_id < 0 or msg_id >= len(messages):
 			eprint(self.name, 'Invalid message id.')
-			return
+			return False
 
 		msg = messages[msg_id][1][Constants.MSG]
 		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
@@ -65,7 +65,13 @@ class Client:
 
 		sig = lrs.sign(msg, self.pri_key, stp_idx, stp_array, g=generator)
 
-		send(self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
+		response = sendrecv(
+			self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])
+		if response[0] == Constants.FAIL:
+			eprint(self.name, response[1])
+			return False
+		else:
+			return True
 
 	def get_message_board(self):
 		return sendrecv(config.COORDINATOR_ADDR, [Constants.DISP_BOARD])

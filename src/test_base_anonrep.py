@@ -3,16 +3,11 @@ from util import Constants
 
 
 def test_announcement_phase():
-	co = create_coordinator()
-	s1 = create_server()
-	s2 = create_server()
+	anonrep = LocalBaseAnonRep(2, [1, 1])
+	s1, s2 = anonrep.servers
+	c1, c2 = anonrep.clients
 
-	begin_client_registration(co)
-
-	c1 = create_client(s1)
-	c2 = create_client(s2)
-
-	start_message_phase(co)
+	anonrep.start_message_phase()
 
 	# make sure the servers have the same ltp/stp lists
 	assert(s1.stp_list == s2.stp_list)
@@ -32,9 +27,9 @@ def test_announcement_phase():
 	old_ltp_list = dict(s1.ltp_list)
 	old_stp_list = dict(s1.stp_list)
 
-	start_feedback_phase(co)
-	end_round(co)
-	start_message_phase(co)
+	anonrep.start_feedback_phase()
+	anonrep.end_round()
+	anonrep.start_message_phase()
 
 	# make sure the stp reputations change but not the ltp's
 	assert(old_stp_list.values() != s1.stp_list.values())
@@ -42,29 +37,24 @@ def test_announcement_phase():
 
 
 def test_message_and_feedback_phase():
-	co = create_coordinator()
-	s1 = create_server()
-	s2 = create_server()
+	anonrep = LocalBaseAnonRep(2, [1, 1])
+	s1, s2 = anonrep.servers
+	c1, c2 = anonrep.clients
 
-	begin_client_registration(co)
+	anonrep.start_message_phase()
 
-	c1 = create_client(s1)
-	c2 = create_client(s1)
+	anonrep.post(0, 'hello1')
+	anonrep.post(1, 'hello2')
 
-	start_message_phase(co)
-
-	post(c1, 'hello1')
-	post(c2, 'hello2')
-
-	start_feedback_phase(co)
+	anonrep.start_feedback_phase()
 
 	board_before_voting = c1.get_message_board()
 	assert(len(board_before_voting) == 2)
 
-	vote(c1, -1, 0)
-	vote(c1, -1, 0)
-	vote(c1, 1, 1)
-	vote(c2, 1, 0)
+	anonrep.vote(0, -1, 0)
+	anonrep.vote(0, -1, 0)
+	anonrep.vote(1, 1, 1)
+	anonrep.vote(1, 1, 0)
 
 	board_after_voting = c2.get_message_board()
 	assert(len(board_after_voting) == 2)
@@ -72,4 +62,4 @@ def test_message_and_feedback_phase():
 	assert(board_after_voting[0][1][Constants.FB] == [1, -1])
 	assert(board_after_voting[1][1][Constants.FB] == [1, 0])
 
-	end_round(co)
+	anonrep.end_round()

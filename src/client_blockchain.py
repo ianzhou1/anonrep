@@ -175,6 +175,8 @@ class BlockchainClient(Client):
 					self.respond[msg_head](s, msg_args)
 				else:
 					self.respond[msg_head](msg_args)
+				if msg_head == Constants.SHUFFLE:
+					break
 			except ConnectionAbortedError:
 				print()
 				ss.close()
@@ -193,7 +195,8 @@ class BlockchainClient(Client):
 
 		# see if wallets have enough reputation
 		if len(self.wallets) < rep:
-			print('Error: You do not have enough reputation to post that.')
+			eprint(self.name, 'You do not have enough reputation to post that.')
+			return False
 
 		stp = powm(generator, self.pri_key)
 		sig = self.sign(msg, generator)
@@ -222,6 +225,8 @@ class BlockchainClient(Client):
 
 		send(self.server_addr,
 			[Constants.NEW_MESSAGE, msg, stp, sig, addresses, signatures, self.addr])
+
+		return True
 
 	def show_help(self):
 		"""Display help text."""
