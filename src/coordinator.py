@@ -30,6 +30,7 @@ class Coordinator:
 		self.ss.bind(self.addr)
 		self.ss.listen(5)
 		self.server_started = False
+		self.servers_ready = 0
 
 		sys.stdout.write('\r# servers: 0 | []')
 		sys.stdout.flush()
