@@ -23,8 +23,6 @@ class BlockchainClient(Client):
 	def __init__(self, server_host, server_port):
 		self.contract_address = sendrecv(
 			config.COORDINATOR_ADDR, [Constants.GET_CONTRACT_ADDRESS])
-		self.blockchain = bc.LocalBlockchain()
-		self.blockchain.connect_to_contract('reputation.sol', self.contract_address)
 		self.wallets = []
 		self.listening = False
 
