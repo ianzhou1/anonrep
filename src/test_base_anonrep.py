@@ -3,9 +3,9 @@ from util import Constants
 
 
 def test_announcement_phase():
-	anonrep = LocalBaseAnonRep(2, [1, 1])
+	anonrep = LocalBaseAnonRep(2, [2, 1])
 	s1, s2 = anonrep.servers
-	c1, c2 = anonrep.clients
+	c1, c2, c3 = anonrep.clients
 
 	anonrep.start_message_phase()
 
@@ -14,11 +14,11 @@ def test_announcement_phase():
 	assert(s1.ltp_list == s2.ltp_list)
 
 	# make sure all the ltp's are in there
-	assert(set([c1.pub_key, c2.pub_key]) == s1.ltp_list.keys())
+	assert(set([c1.pub_key, c2.pub_key, c3.pub_key]) == s1.ltp_list.keys())
 
 	# make sure the ltp's are encrypted
 	assert(s1.ltp_list.keys() != s1.stp_list.keys())
-	assert(len(s1.ltp_list.keys()) == 2)
+	assert(len(s1.ltp_list.keys()) == 3)
 
 	# make sure the scores are encrypted in ltp_list
 	assert(set(s1.ltp_list.values()) != set([1]))
@@ -37,9 +37,9 @@ def test_announcement_phase():
 
 
 def test_message_and_feedback_phase():
-	anonrep = LocalBaseAnonRep(2, [1, 1])
+	anonrep = LocalBaseAnonRep(2, [2, 1])
 	s1, s2 = anonrep.servers
-	c1, c2 = anonrep.clients
+	c1, c2, c3 = anonrep.clients
 
 	anonrep.start_message_phase()
 

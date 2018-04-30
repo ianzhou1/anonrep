@@ -1,3 +1,6 @@
+# http://web.cs.elte.hu/~rfid/p116-neff.pdf
+# See above for more details.
+
 import random
 from util import Constants, send, recv, randkey, powm, modinv, divide
 
@@ -92,10 +95,53 @@ def verify_simple(sock, Gamma, R, S,
 
 	return ret
 
+"""
+def prove_general(sock, nym_pre, nym_post, gamma, u, v,
+		g=Constants.G, p=Constants.P, q=Constants.Q):
+	assert(len(u) == len(v))
+	n = len(u)
+
+	U = [powm(g, u[i], p) for i in range(n)]
+	V = [powm(g, v[i], p) for i in range(n)]
+
+	# nym proof
+	a = [randkey(0, q - 1) for _ in range(n)]
+	b = [randkey(0, q - 1) for _ in range(n - 1)]
+	b.append(sum([(b[i] * v[i]) % q for i in range(n - 1)]) % q)
+	b[-1] = (b[-1] - gamma * sum([(a[i] * u[i]) % q for i in range(n)]) % q) % q
+	b[-1] = (b[-1] * modinv(v[-1], q)) % q
+	A = [powm(g, a[i], p) for i in range(n)]
+	B = [powm(g, b[i], p) for i in range(n)]
+
+	lam = randkey(0, q - 1)
+
+	s = [(a[i] + lam * u[i]) % q for i in range(n)]
+	r = [(b[i] + lam * v[i]) % q for i in range(n)]
+
+	P = 1
+	Q = 1
+	for i in range(n):
+		P = (P * powm(nym_pre[i], r[i], p)) % p
+		Q = (Q * powm(nym_post[i], s[i], p)) % p
+
+	# print(P, Q, divide(P, Q, p), divide(Q, P, p))
+
+	for i in range(n - 1):
+		assert(powm(g, s[i], p) == (A[i] * powm(U[i], lam, p)) % p)
+		assert(powm(g, r[i], p) == (B[i] * powm(V[i], lam, p)) % p)
+"""
+
 def prove(sock, elts_pre, elts_post, pi, beta, g_, h_,
 		g=Constants.G, p=Constants.P, q=Constants.Q):
-	assert(len(elts_pre) == len(elts_post))
-	n = len(elts_pre)
+	nym_pre = elts_pre[0]
+	nym_post = elts_post[0]
+	XY_pre = elts_pre[1]
+	XY_post = elts_post[1]
+
+	assert(len(nym_pre) == len(nym_post))
+	assert(len(XY_pre) == len(XY_post))
+	assert(len(nym_pre) == len(XY_pre))
+	n = len(nym_pre)
 	pi_inv = [_ for _ in range(n)]
 	for i in range(n):
 		pi_inv[pi[i]] = i
@@ -108,14 +154,14 @@ def prove(sock, elts_pre, elts_post, pi, beta, g_, h_,
 	gamma = randkey(1, q - 1)
 
 	Gamma = powm(g, gamma, p)
-	A = [powm(g, a[i], p) for i in range(len(a))]
-	C = [powm(A[pi[i]], gamma, p) for i in range(len(A))]
-	U = [powm(g, u[i], p) for i in range(len(u))]
-	W = [powm(g, gamma * w[i], p) for i in range(len(w))]
+	A = [powm(g, a[i], p) for i in range(n)]
+	C = [powm(A[pi[i]], gamma, p) for i in range(n)]
+	U = [powm(g, u[i], p) for i in range(n)]
+	W = [powm(g, gamma * w[i], p) for i in range(n)]
 	Lambda_1 = powm(g_, tau_0 + sum([(w[i] * beta) % q for i in range(n)]), p)
 	Lambda_2 = powm(h_, tau_0 + sum([(w[i] * beta) % q for i in range(n)]), p)
 	for i in range(n):
-		X_i, Y_i = elts_pre[i]
+		X_i, Y_i = XY_pre[i]
 		Lambda_1 = (Lambda_1 * powm(X_i, (w[pi_inv[i]] - u[i]) % q, p)) % p
 		Lambda_2 = (Lambda_2 * powm(Y_i, (w[pi_inv[i]] - u[i]) % q, p)) % p
 	send(sock, [A, C, U, W, Gamma, Lambda_1, Lambda_2])
@@ -142,11 +188,20 @@ def prove(sock, elts_pre, elts_post, pi, beta, g_, h_,
 	# step 6
 	prove_simple(sock, gamma, r, s, g, p, q)
 
+	# nym proof
+	# prove_general(sock, nym_pre, nym_post, gamma, r, s, g, p, q)
 
 def verify(sock, elts_pre, elts_post, g_, h_,
 		g=Constants.G, p=Constants.P, q=Constants.Q):
-	assert(len(elts_pre) == len(elts_post))
-	n = len(elts_pre)
+	nym_pre = elts_pre[0]
+	nym_post = elts_post[0]
+	XY_pre = elts_pre[1]
+	XY_post = elts_post[1]
+
+	assert(len(nym_pre) == len(nym_post))
+	assert(len(XY_pre) == len(XY_post))
+	assert(len(nym_pre) == len(XY_pre))
+	n = len(nym_pre)
 
 	# step 1
 	A, C, U, W, Gamma, Lambda_1, Lambda_2 = recv(sock)
@@ -175,8 +230,8 @@ def verify(sock, elts_pre, elts_post, g_, h_,
 	Phi_1 = 1
 	Phi_2 = 1
 	for i in range(n):
-		X_i, Y_i = elts_pre[i]
-		X_ibar, Y_ibar = elts_post[i]
+		X_i, Y_i = XY_pre[i]
+		X_ibar, Y_ibar = XY_post[i]
 		Phi_1 = (Phi_1 * powm(X_ibar, sigma[i], p) * powm(X_i, -rho[i] % q, p)) % p
 		Phi_2 = (Phi_2 * powm(Y_ibar, sigma[i], p) * powm(Y_i, -rho[i] % q, p)) % p
 

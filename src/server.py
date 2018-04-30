@@ -205,7 +205,7 @@ class Server:
 
 			else:
 				# verify shuffle from prev server
-				if not shuffle.verify(s, ann_list_pre[1], ann_list_post[1], g_, h_):
+				if not shuffle.verify(s, ann_list_pre, ann_list_post, g_, h_):
 					self.eprint('Verifiable shuffle failed.')
 					s.close()
 					return
@@ -235,11 +235,11 @@ class Server:
 
 			# prove shuffle to next server (if more than one server)
 			if self.addr != self.next_addr:
-				shuffle.prove(s, ann_list[1], new_ann_list[1], pi, beta, g_, h_)
+				shuffle.prove(s, ann_list, new_ann_list, pi, beta, g_, h_)
 		else:
 			# verify shuffle from prev server (if more than one server)
 			if self.addr != self.prev_addr:
-				if not shuffle.verify(s, ann_list_pre[1], ann_list_post[1], g_, h_):
+				if not shuffle.verify(s, ann_list_pre, ann_list_post, g_, h_):
 					self.eprint('Verifiable shuffle failed.')
 					s.close()
 					return
@@ -339,7 +339,7 @@ class Server:
 				ann_list.append([(secret, v) for v in self.stp_list.values()])
 			else:
 				# verify shuffle from prev server
-				if not shuffle.verify(s, ann_list_pre[1], ann_list_post[1], g_, h_):
+				if not shuffle.verify(s, ann_list_pre, ann_list_post, g_, h_):
 					self.eprint('Verifiable shuffle failed.')
 					s.close()
 					return
@@ -375,11 +375,11 @@ class Server:
 
 			# prove shuffle to prev server
 			if self.addr != self.prev_addr:
-				shuffle.prove(s, ann_list[1], new_ann_list[1], pi, beta, g_, h_)
+				shuffle.prove(s, ann_list, new_ann_list, pi, beta, g_, h_)
 		else:
 			# verify shuffle from next server (if more than one server)
 			if self.addr != self.next_addr:
-				if not shuffle.verify(s, ann_list_pre[1], ann_list_post[1], g_, h_):
+				if not shuffle.verify(s, ann_list_pre, ann_list_post, g_, h_):
 					self.eprint('Verifiable shuffle failed.')
 					s.close()
 					return
