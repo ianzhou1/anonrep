@@ -12,7 +12,7 @@ import config
 import lrs
 
 from client import Client
-from util import Constants, msg_hash, powm, recv, recvbytes, send, sendbytes, sendrecv, eprint
+from util import Constants, msg_hash, recv, recvbytes, send, sendbytes, sendrecv, eprint
 from hashlib import sha1
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
