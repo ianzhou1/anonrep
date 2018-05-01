@@ -66,12 +66,8 @@ if __name__ == '__main__':
 		input()
 
 		while True:
-			# announcement phase
-			c.begin_announcement_phase()
-			while c.phase != Constants.MESSAGE_PHASE:
-				time.sleep(0.1)
-
 			# message phase
+			c.end_announcement_phase(None)
 			time.sleep(Constants.MESSAGE_PHASE_LENGTH_IN_SECS)
 
 			# feedback phase
@@ -81,11 +77,6 @@ if __name__ == '__main__':
 			# coinshuffle phase
 			c.board.start_coinshuffle()
 			while c.phase != Constants.COINSHUFFLE_FINISHED_PHASE:
-				time.sleep(0.1)
-
-			# end round and restart
-			c.end_round()
-			while c.phase != Constants.ANNOUNCEMENT_PHASE:
 				time.sleep(0.1)
 	finally:
 		c.ss.close()

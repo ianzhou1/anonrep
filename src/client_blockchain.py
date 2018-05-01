@@ -4,14 +4,16 @@ import random
 import re
 import socket
 import sys
+import traceback
 from threading import Thread
 
 import blockchain as bc
 import config
-import traceback
+import lrs
 
 from client import Client
-from util import Constants, powm, recv, recvbytes, send, sendbytes, sendrecv, eprint
+from util import Constants, msg_hash, powm, recv, recvbytes, send, sendbytes, sendrecv, eprint
+from hashlib import sha1
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
@@ -39,6 +41,17 @@ class BlockchainClient(Client):
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
 
 		super().__init__(server_host, server_port)
+
+
+	def lrs_sign(self, msg):
+		"""Sign for LRS."""
+		ltp_array = sendrecv(self.server_addr, [Constants.GET_LTP_ARRAY])
+		ltp_idx = ltp_array.index(self.pub_key)
+
+		# modify stp_array to prevent duplicate voting
+		ltp_array.append(msg_hash(msg, sha1))
+
+		return lrs.sign(msg, self.pri_key, ltp_idx, ltp_array)
 
 	def encrypt(self, payload, rsa_key):
 		"""Encrypt a payload using a hybrid cryptosystem.
@@ -189,15 +202,11 @@ class BlockchainClient(Client):
 
 	def post(self, msg, rep):
 		"""Post a message."""
-		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
 
 		# see if wallets have enough reputation
 		if len(self.wallets) < rep:
 			eprint(self.name, 'You do not have enough reputation to post that.')
 			return False
-
-		stp = powm(generator, self.pri_key)
-		sig = self.sign(msg, generator)
 
 		# if rep is 0, generate a new wallet to use
 		if rep == 0:
@@ -222,7 +231,7 @@ class BlockchainClient(Client):
 			Thread(target=self.start_server, args=(self.ss,), daemon=True).start()
 
 		send(self.server_addr,
-			[Constants.NEW_MESSAGE, msg, stp, sig, addresses, signatures, self.addr])
+			[Constants.NEW_MESSAGE, msg, addresses, signatures, self.addr])
 
 		return True
 

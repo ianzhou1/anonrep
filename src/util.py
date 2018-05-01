@@ -79,6 +79,9 @@ class Constants:
 	GET_GENERATOR = 'GET_GENERATOR'
 	GET_STP_ARRAY = 'GET_STP_ARRAY'
 
+	# blockchain server message headers
+	GET_LTP_ARRAY = 'GET_LTP_ARRAY'
+
 	# message board headers
 	POST_MESSAGE = 'POST_MESSAGE'
 	POST_FEEDBACK = 'POST_FEEDBACK'
@@ -91,6 +94,7 @@ class Constants:
 			REV_ANNOUNCEMENT,
 			GET_GENERATOR,
 			GET_STP_ARRAY,
+			GET_LTP_ARRAY,
 			DISP_BOARD,
 			NEW_FEEDBACK,
 			GET_CONTRACT_ADDRESS,

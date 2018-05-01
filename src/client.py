@@ -36,6 +36,18 @@ class Client:
 
 		return (r, s)
 
+	def lrs_sign(self, msg):
+		"""Sign for LRS."""
+		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
+		stp_array = sendrecv(self.server_addr, [Constants.GET_STP_ARRAY])
+		stp = powm(generator, self.pri_key)
+		stp_idx = stp_array.index(stp)
+
+		# modify stp_array to prevent duplicate voting
+		stp_array.append(msg_hash(msg, sha1))
+
+		return lrs.sign(msg, self.pri_key, stp_idx, stp_array, g=generator)
+
 	def post(self, msg):
 		"""Post a message."""
 		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
@@ -55,15 +67,7 @@ class Client:
 			return False
 
 		msg = messages[msg_id][1][Constants.MSG]
-		generator = sendrecv(self.server_addr, [Constants.GET_GENERATOR])
-		stp_array = sendrecv(self.server_addr, [Constants.GET_STP_ARRAY])
-		stp = powm(generator, self.pri_key)
-		stp_idx = stp_array.index(stp)
-
-		# modify stp_array to prevent duplicate voting
-		stp_array.append(msg_hash(msg, sha1))
-
-		sig = lrs.sign(msg, self.pri_key, stp_idx, stp_array, g=generator)
+		sig = self.lrs_sign(msg)
 
 		response = sendrecv(
 			self.server_addr, [Constants.NEW_FEEDBACK, msg_id, msg, amount, sig])

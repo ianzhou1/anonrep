@@ -150,6 +150,13 @@ class Server:
 		v = (powm(stp, r) * powm(r, s)) % Constants.P
 		return u == v
 
+	def verify_lrs_signature(self, client_msg, client_sig):
+		# modify copy of stp_array to prevent duplicate voting
+		stp_array = list(self.stp_array)
+		stp_array.append(msg_hash(client_msg, sha1))
+
+		return lrs.verify(client_msg, stp_array, *client_sig, g=self.generator)
+
 	def new_client(self, msg_args):
 		client_ltp = msg_args[0]
 		client_sec = Constants.INIT_SECRET
@@ -200,7 +207,7 @@ class Server:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
 				ann_list = []
-				ann_list.append([k for k in self.ltp_list.keys()])
+				ann_list.append(list(self.ltp_list.keys()))
 				ann_list.append([(self.secret, v) for v in self.ltp_list.values()])
 
 			else:
@@ -306,10 +313,6 @@ class Server:
 			send(s, [Constants.FAIL, 'Invalid vote amount.'])
 			return
 
-		# modify copy of stp_array to prevent duplicate voting
-		stp_array = list(self.stp_array)
-		stp_array.append(msg_hash(client_msg, sha1))
-
 		# verify not a duplicate
 		if client_tag in self.lrs_duplicates:
 			self.eprint('Feedback linkable ring signature duplicate detected.')
@@ -317,7 +320,7 @@ class Server:
 			return
 
 		# verify linkable ring signature
-		if not lrs.verify(client_msg, stp_array, *client_sig, g=self.generator):
+		if not self.verify_lrs_signature(client_msg, client_sig):
 			self.eprint('Feedback linkable ring signature verification failed.')
 			send(s, [Constants.FAIL, 'LRS verification failed.'])
 			return

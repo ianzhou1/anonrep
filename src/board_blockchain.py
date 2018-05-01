@@ -9,7 +9,8 @@ class BlockchainMessageBoard(MessageBoard):
 	def __init__(self, coordinator):
 		super().__init__(coordinator)
 
-		self.addrs = {}
+		self.reps = {}
+		self.msg_id_to_addr = {}
 		self.used_wallets = set()
 
 		# add items to self.respond and self.msg_types
@@ -19,7 +20,7 @@ class BlockchainMessageBoard(MessageBoard):
 		}
 
 		new_msg_types = {
-			Constants.POST_MESSAGE: [str, int, list, list],
+			Constants.POST_MESSAGE: [str, list, list],
 			Constants.SHUFFLE: [list],
 		}
 
@@ -33,7 +34,7 @@ class BlockchainMessageBoard(MessageBoard):
 
 	def post_message(self, msg_args):
 		"""Posts message to board and increment message id."""
-		client_msg, client_stp, addresses, next_hop_addr = msg_args
+		client_msg, addresses, sender_addr = msg_args
 
 		# verify that there is either one address with 0 reputation or all addresses
 		# have 1 reputation, and that the addresses have never been used before.
@@ -48,12 +49,12 @@ class BlockchainMessageBoard(MessageBoard):
 
 		self.used_wallets.update(addresses)
 
-		self.addrs[client_stp] = tuple(next_hop_addr)
+		self.reps[tuple(sender_addr)] = 0
+		self.msg_id_to_addr[self.msg_id] = tuple(sender_addr)
 
 		# post message to board and increment message id
 		self.board.append([self.msg_id, {
 				Constants.MSG: client_msg,
-				Constants.NYM: client_stp,
 				Constants.REP: addresses,
 				Constants.FB: Constants.INIT_FEEDBACK
 		}])
@@ -95,25 +96,25 @@ class BlockchainMessageBoard(MessageBoard):
 		# determine which clients should participate in the coinshuffle
 		final_balances = defaultdict(int)
 		for i in range(self.message_marker, len(self.board)):
-			stp = self.board[i][1][Constants.NYM]
+			addr = self.msg_id_to_addr[i]
 
 			# check if this user has > 0 reputation
 			for wallet in self.board[i][1][Constants.REP]:
 				balance = self.blockchain.get_reputation(wallet)
-				final_balances[stp] += balance
+				final_balances[addr] += balance
 				if balance > 0:
 					self.spending_wallets.append((wallet, balance))
 					self.spending_wallets_total += balance
 
 		# let all clients know whether they are participating in the shuffle or not.
 		participants = []
-		for stp, balance in final_balances.items():
+		for addr, balance in final_balances.items():
 			if balance > 0:
 				encryption_key = sendrecv(
-					self.addrs[stp], [Constants.PARTICIPATION_STATUS, balance])
-				participants.append((self.addrs[stp], encryption_key))
+					addr, [Constants.PARTICIPATION_STATUS, balance])
+				participants.append((addr, encryption_key))
 			else:
-				send(self.addrs[stp], [Constants.PARTICIPATION_STATUS, balance])
+				send(addr, [Constants.PARTICIPATION_STATUS, balance])
 
 		# iterate over participants and send them the encyption keys that
 		# they need, get ack.
