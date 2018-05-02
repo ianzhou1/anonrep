@@ -1,7 +1,11 @@
 # anonrep (TODO: Think of name for the new system)
 
 ## Overview
-This repository contains both a Python implementation of an intersection-attack-resistant improvement of the original [AnonRep](http://www.cs.yale.edu/homes/zhai-ennan/zhai16anonrep.pdf) anonymous reputation system, and a Python implementation of the original AnonRep system. The improvement in the new system that it stores users' reputation scores in the Ethereum (or other Solidity-based) blockchain, as opposed to in the AnonRep servers, using CoinShuffle to maintain anonymity. This yields the following benefits:
+This repository contains:
+1. A Python implementation of an intersection-attack-resistant improvement of the original [AnonRep](http://www.cs.yale.edu/homes/zhai-ennan/zhai16anonrep.pdf) anonymous reputation system
+2. A Python implementation of the original AnonRep system.
+
+The improvement in the new system that it stores users' reputation scores in the Ethereum (or other Solidity-based) blockchain, as opposed to in the AnonRep servers, using CoinShuffle to maintain anonymity. This yields the following benefits:
 1. We don't need one-time pseudonyms anymore, so we don't need the announcement phase and verifiable shuffles.
 2. Users can post messages with any non-negative reputation that does not exceed their total reputation, which protects against intersection attacks.
 
