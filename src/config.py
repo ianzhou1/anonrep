@@ -1,10 +1,6 @@
-COORDINATOR_SERVER = 'localhost'
-COORDINATOR_PORT = 6667
+COORDINATOR_SERVER = 'localhost'  # modify this!
+COORDINATOR_PORT = 6667           # modify this!
 COORDINATOR_ADDR = (COORDINATOR_SERVER, COORDINATOR_PORT)
 
-BOARD_SERVER = 'localhost'
-BOARD_PORT = 6668
-BOARD_ADDR = (BOARD_SERVER, BOARD_PORT)
-
-CLIENT_ADDR = ('localhost', 0)
+CLIENT_ADDR = ('localhost', 0)    # modify this!
 
