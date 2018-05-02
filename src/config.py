@@ -1,6 +1,5 @@
-COORDINATOR_SERVER = 'localhost'  # modify this!
-COORDINATOR_PORT = 6667           # modify this!
-COORDINATOR_ADDR = (COORDINATOR_SERVER, COORDINATOR_PORT)
-
-CLIENT_ADDR = ('localhost', 0)    # modify this!
-
+# addresses are in (host, port) format
+COORDINATOR_ADDR = ('localhost', 6667)
+CLIENT_ADDR = ('localhost', 0)
+MESSAGE_PHASE_LENGTH_IN_SECS = 6
+FEEDBACK_PHASE_LENGTH_IN_SECS = 6

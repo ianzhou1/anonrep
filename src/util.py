@@ -37,9 +37,6 @@ class Constants:
 	AES_KEY_LENGTH = 16  # length of AES key for CoinShuffle
 	RSA_KEY_LENGTH = 2048  # length of RSA key for CoinShuffle
 
-	MESSAGE_PHASE_LENGTH_IN_SECS = 6
-	FEEDBACK_PHASE_LENGTH_IN_SECS = 6
-
 	# general headers
 	SUCCESS = 'SUCCESS'
 	FAIL = 'FAIL'

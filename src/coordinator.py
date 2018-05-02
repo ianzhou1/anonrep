@@ -201,7 +201,7 @@ if __name__ == '__main__':
 		sys.exit(1)
 
 	print('*** Press [ENTER] to begin client registration. ***')
-	c = Coordinator(config.COORDINATOR_SERVER, config.COORDINATOR_PORT)
+	c = Coordinator(*config.COORDINATOR_ADDR)
 	try:
 		thread = Thread(target=c.run)
 		thread.start()
@@ -219,11 +219,11 @@ if __name__ == '__main__':
 				time.sleep(0.1)
 
 			# message phase
-			time.sleep(Constants.MESSAGE_PHASE_LENGTH_IN_SECS)
+			time.sleep(config.MESSAGE_PHASE_LENGTH_IN_SECS)
 
 			# feedback phase
 			c.begin_feedback_phase()
-			time.sleep(Constants.FEEDBACK_PHASE_LENGTH_IN_SECS)
+			time.sleep(config.FEEDBACK_PHASE_LENGTH_IN_SECS)
 
 			# end round and restart
 			c.end_round()
