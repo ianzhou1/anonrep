@@ -203,9 +203,6 @@ class BlockchainClient(Client):
 		ss.close()
 		self.listening = False
 
-	def get_total_reputation(self):
-		"""Returns the total reputation."""
-
 	def post(self, msg, rep):
 		"""Post a message."""
 

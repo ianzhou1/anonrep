@@ -40,7 +40,6 @@ class BlockchainMessageBoard(MessageBoard):
 		# have 1 reputation, and that the addresses have never been used before.
 		if len(addresses) > 1:
 			for addr in addresses:
-				# TODO: cache reputations to reduce load on blockchain.
 				if self.blockchain.get_reputation(addr) != 1:
 					eprint(self.name, 'All wallets should have had >0 reputation.')
 					return
