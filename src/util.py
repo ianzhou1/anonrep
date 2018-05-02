@@ -2,7 +2,6 @@ import socket
 import sys
 import json
 from random import randint
-from threading import Thread
 from functools import singledispatch
 
 
@@ -19,9 +18,13 @@ class Constants:
 	# 		'D6FAE5644738FAA31A4FF55BCCC0A151AF5F0DC8B4BD45BF37DF365C' +
 	# 		'1A65E68CFDA76D4DA708DF1FB2BC2E4A4371', 16) # prime modulo
 	# Q = int('F518AA8781A8DF278ABA4E7D64B7CB9D49462353', 16) # subgroup
-	G = 190
-	P = 66071
-	Q = 6607
+
+	# G = 190
+	# P = 66071
+	# Q = 6607
+	G = 2203
+	P = 16000393
+	Q = 666683
 
 	INTEGER_SIZE = 8  # number of bytes that will be used to denote the size of payload
 	BUFFER_SIZE = 4096  # socket buffer receive buffer size
