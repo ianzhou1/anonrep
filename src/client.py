@@ -11,11 +11,11 @@ from hashlib import sha1
 class Client:
 	"""Base implementation of client."""
 
-	def __init__(self, server_host, server_port):
+	def __init__(self, server_host, server_port, private_key=None):
 		self.name = 'CLIENT'
 
 		# core variables
-		self.pri_key = randkey()
+		self.pri_key = randkey() if private_key is None else private_key
 		self.pub_key = powm(Constants.G, self.pri_key)
 
 		# socket variables

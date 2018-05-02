@@ -204,12 +204,12 @@ def msg_hash(msg, hash_func, mod=Constants.P):
 	return int(hash_func(msg).hexdigest(), 16) % mod
 
 
-def randkey(start=0, end=Constants.P - 1):
+def randkey(start=0, end=Constants.Q - 1):
 	"""Returns a random key."""
 	return randint(start, end)
 
 
-def randkeyRP(start=0, end=Constants.P - 1):
+def randkeyRP(start=0, end=Constants.Q - 1):
 	"""Returns a random key (relatively prime to end + 1)."""
 	ret = randkey(start, end)
 	while gcd(ret, end + 1) != 1:
