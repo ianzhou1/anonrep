@@ -7,7 +7,7 @@ from threading import Thread
 
 import config
 from board import MessageBoard
-from util import Constants, send, recv, eprint, sprint
+from util import Constants, sendrecv, send, recv, eprint, sprint
 
 
 class Coordinator:
@@ -129,7 +129,19 @@ class Coordinator:
 			time.sleep(0.01)
 
 		server_addr = self.servers[0]
-		send(server_addr, [Constants.NEW_ANNOUNCEMENT,
+
+		# get ciphertexts (secret, encrypted reputation)
+		secret, reputation = sendrecv(server_addr, [Constants.GET_CIPHERTEXTS])
+
+		clients = []
+		for server_addr in self.servers:
+			clients.extend(sendrecv(server_addr, [Constants.GET_CLIENTS]))
+
+		for server_addr in self.servers:
+			sendrecv(server_addr,
+				[Constants.UPDATE_CLIENTS, secret, reputation, clients])
+
+		send(self.servers[0], [Constants.NEW_ANNOUNCEMENT,
 				Constants.G, [], [], 0, 0, Constants.INIT_ID])
 
 	def begin_feedback_phase(self):

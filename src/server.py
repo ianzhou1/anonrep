@@ -1,7 +1,8 @@
 import socket
 import sys
 import traceback
-import random
+import time
+from threading import Thread
 
 import config
 import lrs
@@ -16,6 +17,8 @@ class Server:
 		self.server_id = Constants.INIT_ID
 		self.prev_addr = None
 		self.next_addr = None
+		self.secret = None
+		self.client_rep = None
 
 		# core variables
 		self.eph_key = randkey()
@@ -42,7 +45,6 @@ class Server:
 		self.respond = {
 				Constants.NEW_CLIENT: self.new_client,
 				Constants.NEW_REPUTATION: self.new_reputation,
-				Constants.ADD_REPUTATION: self.add_reputation,
 				Constants.NEW_ANNOUNCEMENT: self.new_announcement,
 				Constants.REPLACE_STP: self.replace_stp,
 				Constants.NEW_MESSAGE: self.new_message,
@@ -53,13 +55,15 @@ class Server:
 				Constants.UPDATE_NEIGHBORS: self.update_neighbors,
 				Constants.GET_GENERATOR: self.get_generator,
 				Constants.GET_STP_ARRAY: self.get_stp_array,
+				Constants.GET_CIPHERTEXTS: self.get_ciphertexts,
+				Constants.GET_CLIENTS: self.get_clients,
+				Constants.UPDATE_CLIENTS: self.update_clients,
 		}
 
 		# message type dict for received messages
 		self.msg_types = {
 				Constants.NEW_CLIENT: [int],
-				Constants.NEW_REPUTATION: [int, int, int, list, int],
-				Constants.ADD_REPUTATION: [int, int, int],
+				Constants.NEW_REPUTATION: [int, int, list, int],
 				Constants.NEW_ANNOUNCEMENT: [int, list, list, int, int, int],
 				Constants.REPLACE_STP: [list, int, int],
 				Constants.NEW_MESSAGE: [str, int, list],
@@ -70,6 +74,9 @@ class Server:
 				Constants.UPDATE_NEIGHBORS: [list, list],
 				Constants.GET_GENERATOR: [],
 				Constants.GET_STP_ARRAY: [],
+				Constants.GET_CIPHERTEXTS: [],
+				Constants.GET_CLIENTS: [],
+				Constants.UPDATE_CLIENTS: [int, int, list],
 		}
 
 		assert set(self.respond.keys()) == set(self.msg_types.keys())
@@ -159,21 +166,31 @@ class Server:
 
 	def new_client(self, msg_args):
 		client_ltp = msg_args[0]
+		self.ltp_list[client_ltp] = 0
+
+	def get_ciphertexts(self, s, msg_args):
+		self.ciphertext_socket = s
 		client_sec = Constants.INIT_SECRET
 		client_rep = Constants.INIT_REPUTATION
 
 		# initiate new reputation
-		rep_args = [client_ltp, client_sec, client_rep, [], Constants.INIT_ID]
+		rep_args = [client_sec, client_rep, [], Constants.INIT_ID]
 		self.new_reputation(rep_args)
 
-	def new_reputation(self, msg_args):
-		client_ltp, client_sec, client_rep, server_pub_keys, init_id = msg_args
+	def get_clients(self, s, msg_args):
+		send(s, list(self.ltp_list.keys()))
 
+	def update_clients(self, s, msg_args):
+		secret, reputation, clients = msg_args
+		self.secret = secret
+		self.ltp_list = {client: reputation for client in clients}
+		send(s, Constants.SUCCESS)
+
+	def new_reputation(self, msg_args):
+		client_sec, client_rep, server_pub_keys, init_id = msg_args
 		if init_id != self.server_id:
 			if init_id == Constants.INIT_ID:
 				init_id = self.server_id
-
-			self.sprint('New client with long-term pseudonym: {}'.format(client_ltp % Constants.MOD))
 
 			# encrypt client reputation
 			server_pub_keys.append(self.pub_key)
@@ -183,21 +200,10 @@ class Server:
 			client_rep = self.encryptElGamal(client_rep, server_pub_keys)
 
 			# pass reputation to next server
-			send(self.next_addr, [Constants.NEW_REPUTATION, client_ltp, client_sec, client_rep, server_pub_keys, init_id])
+			send(self.next_addr, [Constants.NEW_REPUTATION, client_sec, client_rep, server_pub_keys, init_id])
 		else:
-			# initiate add reputation
-			rep_args = [client_ltp, client_sec, client_rep]
-			self.add_reputation(rep_args)
-
-	def add_reputation(self, msg_args):
-		client_ltp, client_sec, client_rep = msg_args
-		if client_ltp in self.ltp_list:
-			return
-
-		# add reputation to current server and update next server
-		self.secret = client_sec
-		self.ltp_list[client_ltp] = client_rep
-		send(self.next_addr, [Constants.ADD_REPUTATION, client_ltp, client_sec, client_rep])
+			send(self.ciphertext_socket, [client_sec, client_rep])
+			self.ciphertext_socket.close()
 
 	def new_announcement(self, s, msg_args):
 		generator, ann_list_pre, ann_list_post, g_, h_, init_id = msg_args
@@ -449,10 +455,9 @@ class Server:
 
 				# respond to received message
 				if msg_head in Constants.OPEN_SOCKET:
-					self.respond[msg_head](s, msg_args)
+					Thread(target=self.respond[msg_head], args=(s, msg_args)).start()
 				else:
-					self.respond[msg_head](msg_args)
-				s.close()
+					Thread(target=self.respond[msg_head], args=(msg_args,)).start()
 			except Exception:
 				traceback.print_exc()
 
