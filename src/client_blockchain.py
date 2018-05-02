@@ -101,18 +101,22 @@ class BlockchainClient(Client):
 		s, addr = self.ss.accept()
 		self.shuffle(recvbytes(s))
 
+		return True
+
 	def give_keys(self, s, msg_args):
 		"""Handles a request to give an RS"""
 		balance, = msg_args
 		# generate wallets
 		if balance == 0:
-			return
+			return False
 		self.new_wallets = [bc.generate_keypair() for _ in range(balance)]
 		# generate RSA key
 		self.rsa_keys = RSA.generate(Constants.RSA_KEY_LENGTH)
 		self.cipher = PKCS1_OAEP.new(self.rsa_keys)
 		# send the RSA key
 		send(s, self.rsa_keys.publickey().exportKey().decode(Constants.ENCODING))
+
+		return True
 
 	def shuffle(self, payload):
 		"""Shuffles a list of keys and adds own key as described in CoinShuffle."""
@@ -183,9 +187,11 @@ class BlockchainClient(Client):
 
 				# respond to received message
 				if msg_head in Constants.OPEN_SOCKET:
-					self.respond[msg_head](s, msg_args)
+					if not self.respond[msg_head](s, msg_args):
+						break
 				else:
-					self.respond[msg_head](msg_args)
+					if not self.respond[msg_head](msg_args):
+						break
 				if msg_head == Constants.SHUFFLE:
 					break
 			except ConnectionAbortedError:
