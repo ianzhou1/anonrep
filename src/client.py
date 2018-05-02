@@ -22,7 +22,7 @@ class Client:
 		self.server_addr = (server_host, server_port)
 
 		# new client
-		send(self.server_addr, [Constants.NEW_CLIENT, self.pub_key])
+		sendrecv(self.server_addr, [Constants.NEW_CLIENT, self.pub_key])
 
 	def sign(self, msg, generator):
 		"""Sign with ElGamal signature."""

@@ -104,7 +104,8 @@ class Constants:
 			KEYS,
 			GET_CIPHERTEXTS,
 			GET_CLIENTS,
-			UPDATE_CLIENTS])
+			UPDATE_CLIENTS,
+			NEW_CLIENT])
 
 	# message board keys
 	MSG = 'msg' # message

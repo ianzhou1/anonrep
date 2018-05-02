@@ -164,9 +164,10 @@ class Server:
 
 		return lrs.verify(client_msg, stp_array, *client_sig, g=self.generator)
 
-	def new_client(self, msg_args):
+	def new_client(self, s, msg_args):
 		client_ltp = msg_args[0]
 		self.ltp_list[client_ltp] = 0
+		send(s, Constants.SUCCESS)
 
 	def get_ciphertexts(self, s, msg_args):
 		self.ciphertext_socket = s
