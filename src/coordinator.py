@@ -157,9 +157,9 @@ class Coordinator:
 
 	def run(self):
 		while True:
+			s, addr = self.ss.accept()
 			try:
 				# accept and receive socket message
-				s, addr = self.ss.accept()
 				msg = recv(s)
 
 				# displaying a board can be done at any time

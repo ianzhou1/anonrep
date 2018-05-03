@@ -53,12 +53,12 @@ if __name__ == '__main__':
 		print('USAGE: python coordinator.py')
 		sys.exit(1)
 
+	print('*** Press [ENTER] to begin message phase. ***')
 	c = BlockchainCoordinator(*config.COORDINATOR_ADDR)
 	try:
 		thread = Thread(target=c.run)
 		thread.start()
 
-		print('*** Press [ENTER] to begin message phase. ***')
 		input()
 		c.begin_client_registration()
 
