@@ -23,9 +23,10 @@ class BlockchainClient(Client):
 	"""Client implementation for the blockchain version of AnonRep."""
 
 	def __init__(self, server_host, server_port):
-		self.blockchain = bc.LocalBlockchain()
 		self.contract_address = sendrecv(
 			config.COORDINATOR_ADDR, [Constants.GET_CONTRACT_ADDRESS])
+		self.blockchain = bc.LocalBlockchain()
+		self.blockchain.connect_to_contract('reputation.sol', self.contract_address)
 		self.wallets = []
 		self.listening = False
 
