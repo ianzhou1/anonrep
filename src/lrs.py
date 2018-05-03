@@ -1,11 +1,20 @@
-# https://eprint.iacr.org/2004/027.pdf
+# Adapted from https://eprint.iacr.org/2004/027.pdf
 # See above for more details.
 
 from util import Constants, powm, randkey
 from hashlib import sha1
 
-# sign a message using a linkable ring signature
+
 def sign(msg, x_i, idx, L, g=Constants.G, p=Constants.P, q=Constants.Q):
+	"""Signs a message using a linkable ring signature.
+
+	msg: The message to be signed
+	x_i: The private key of the signer
+	idx: The index of the public key in L
+	L: List of public keys
+
+	Returns the signature.
+	"""
 	n = len(L)
 	c = [0 for _ in range(n)]
 	s = [0 for _ in range(n)]
@@ -32,8 +41,16 @@ def sign(msg, x_i, idx, L, g=Constants.G, p=Constants.P, q=Constants.Q):
 
 	return (c[0], s, t)
 
-# verify a message and linkable ring signature
+
 def verify(msg, L, c_0, s, t, g=Constants.G, p=Constants.P, q=Constants.Q):
+	"""Verifies a message signed with a linkable ring signature.
+
+	msg: The message to be signed
+	L: List of public keys
+	c_0, s, t: The values returned by sign()
+
+	Returns whether the signature is valid.
+	"""
 	n = len(L)
 	c = [0 for _ in range(n)]
 	c[0] = c_0
@@ -47,23 +64,14 @@ def verify(msg, L, c_0, s, t, g=Constants.G, p=Constants.P, q=Constants.Q):
 
 	return c_0 == c[0]
 
-# hash function 1
+
 def H1(msg):
-	msg = concat(msg).encode(Constants.ENCODING)
+	"""Hash function 1."""
+	msg = str(msg).encode(Constants.ENCODING)
 	return int(sha1(msg).hexdigest(), 16)
 
-# hash function 2
+
 def H2(msg, g, p, q):
+	"""Hash function 2."""
 	val = H1(msg) % q
 	return powm(g, val, p)
-
-# convert args into string
-def concat(args):
-	ret = []
-	for a in args:
-		if isinstance(a, list):
-			ret.append(concat(a))
-		else:
-			ret.append(str(a))
-
-	return ''.join(ret)

@@ -4,15 +4,20 @@
 import random
 from util import Constants, send, recv, randkey, powm, modinv, divide
 
+
 def generate_permutation(n):
+	"""Returns a permutation of a list containing the integers from 0 to n - 1."""
 	pi = [_ for _ in range(n)]
 	random.shuffle(pi)
 	return pi
 
+
 def shuffle(elts, pi):
+	"""Shuffles elts according to the permutation list pi."""
 	return [elts[pi[i]] for i in range(len(elts))]
 
-def prove_simple(sock, gamma, r, s,
+
+def _prove_simple(sock, gamma, r, s,
 		g=Constants.G, p=Constants.P, q=Constants.Q):
 	assert(len(r) == len(s))
 	n = len(r)
@@ -57,7 +62,8 @@ def prove_simple(sock, gamma, r, s,
 			alpha.append((tmp + theta[i + 1]) % q)
 	send(sock, alpha)
 
-def verify_simple(sock, Gamma, R, S,
+
+def _verify_simple(sock, Gamma, R, S,
 		g=Constants.G, p=Constants.P, q=Constants.Q):
 	assert(len(R) == len(S))
 	n = len(R)
@@ -95,6 +101,7 @@ def verify_simple(sock, Gamma, R, S,
 
 	return ret
 
+
 """
 def prove_general(sock, nym_pre, nym_post, gamma, u, v,
 		g=Constants.G, p=Constants.P, q=Constants.Q):
@@ -131,8 +138,17 @@ def prove_general(sock, nym_pre, nym_post, gamma, u, v,
 		assert(powm(g, r[i], p) == (B[i] * powm(V[i], lam, p)) % p)
 """
 
+
 def prove(sock, elts_pre, elts_post, pi, beta, g_, h_,
 		g=Constants.G, p=Constants.P, q=Constants.Q):
+	"""Generate a zero-knowledge proof for the verifiable shuffle.
+
+	sock: Socket to send messages through
+	elts_pre: Elements before cryptographic operation
+	elts_post: Elements after cryptographic operation
+	pi: Permutation list
+	beta, g_, h_: Verifiable shuffle parameters
+	"""
 	nym_pre = elts_pre[0]
 	nym_post = elts_post[0]
 	XY_pre = elts_pre[1]
@@ -186,13 +202,21 @@ def prove(sock, elts_pre, elts_post, pi, beta, g_, h_,
 	send(sock, [tau, sigma])
 
 	# step 6
-	prove_simple(sock, gamma, r, s, g, p, q)
+	_prove_simple(sock, gamma, r, s, g, p, q)
 
 	# nym proof
 	# prove_general(sock, nym_pre, nym_post, gamma, r, s, g, p, q)
 
+
 def verify(sock, elts_pre, elts_post, g_, h_,
 		g=Constants.G, p=Constants.P, q=Constants.Q):
+	"""Verify a zero-knowledge proof for the verifiable shuffle.
+
+	sock: Socket to send messages through
+	elts_pre: Elements before cryptographic operation
+	elts_post: Elements after cryptographic operation
+	g_, h_: Verifiable shuffle parameters
+	"""
 	nym_pre = elts_pre[0]
 	nym_post = elts_post[0]
 	XY_pre = elts_pre[1]
@@ -224,7 +248,7 @@ def verify(sock, elts_pre, elts_post, g_, h_,
 	# step 6
 	R = [(A[i] * powm(B[i], lam, p)) % p for i in range(n)]
 	S = [(C[i] * powm(D[i], lam, p)) % p for i in range(n)]
-	ret = verify_simple(sock, Gamma, R, S, g, p, q)
+	ret = _verify_simple(sock, Gamma, R, S, g, p, q)
 
 	# step 7
 	Phi_1 = 1

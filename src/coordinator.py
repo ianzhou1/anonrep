@@ -11,7 +11,7 @@ from util import Constants, sendrecv, send, recv, eprint, sprint
 
 
 class Coordinator:
-	"""Base implementation of Coordinator server."""
+	"""Base implementation of coordinator."""
 
 	def __init__(self, host, port):
 		self.name = 'COORDINATOR'
