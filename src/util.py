@@ -6,7 +6,7 @@ from functools import singledispatch
 
 
 class Constants:
-	MOD = 66071  # prime modulo (only used for printing shorter nyms)
+	MOD = 16000393  # prime modulo (only used for printing shorter nyms)
 	# G = int('A4D1CBD5C3FD34126765A442EFB99905F8104DD258AC507FD640' +
 	# 		'6CFF14266D31266FEA1E5C41564B777E690F5504F213160217B4B01B' +
 	# 		'886A5E91547F9E2749F4D7FBD7D3B9A92EE1909D0D2263F80A76A6A2' +
