@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from board import MessageBoard
-from util import Constants, send, sendbytes, sendrecv, eprint
+from util import Constants, send, sendbytes, sendrecv, eprint, sprint
 
 class BlockchainMessageBoard(MessageBoard):
 	"""Message board that stores reputation on the blockchain."""
@@ -62,6 +62,7 @@ class BlockchainMessageBoard(MessageBoard):
 
 	def start_coinshuffle(self):
 		"""Begins Coinshuffle phase."""
+		sprint(self.name, 'Beginning CoinShuffle phase...')
 		# Commits all the changes in reputation to the blockchain.
 		promises = []
 		for i in range(self.message_marker, len(self.board)):
