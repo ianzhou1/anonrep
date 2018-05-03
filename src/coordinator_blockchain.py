@@ -1,3 +1,4 @@
+import random
 import sys
 import time
 from threading import Thread
@@ -37,9 +38,18 @@ class BlockchainCoordinator(Coordinator):
 		"""Handles request for reputation contract address."""
 		send(s, self.contract_address)
 
-	def end_announcement_phase(self, msg_args):
-		"""Handles end of announcement phase."""
-		super().end_announcement_phase(msg_args)
+	def update_servers(self):
+		# update servers and neighbors
+		random.shuffle(self.servers)
+		self.servers_ready = 0
+		self.broadcast_neighbors()
+		# pause before beginning message phase
+		while self.servers_ready != self.num_servers:
+			time.sleep(0.01)
+
+	def begin_message_phase(self):
+		"""Begins message phase."""
+		super().end_announcement_phase(None)
 
 		# denotes where the message board should start looking from when calculating
 		# net feedback
@@ -59,12 +69,13 @@ if __name__ == '__main__':
 		thread = Thread(target=c.run)
 		thread.start()
 
+		# wait to press enter
 		input()
-		c.begin_client_registration()
+		c.update_servers()
 
 		while True:
 			# message phase
-			c.end_announcement_phase(None)
+			c.begin_message_phase()
 			time.sleep(config.MESSAGE_PHASE_LENGTH_IN_SECS)
 
 			# feedback phase

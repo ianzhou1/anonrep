@@ -147,12 +147,14 @@ class LocalBlockchainAnonRep(LocalBaseAnonRep):
 			for _ in range(num):
 				self.clients.append(create_blockchain_client(self.servers[i]))
 
+		self.co.update_servers()
+
 	def end_round(self, sleep=0.05):
 		# This shouldn't do anything in the blockchain version of AnonRep.
 		pass
 
 	def start_message_phase(self, sleep=0.01):
-		self.co.end_announcement_phase(None)
+		self.co.begin_message_phase()
 
 	def post(self, idx, msg, rep, sleep=0.01):
 		old_len = len(self.co.board.board)
